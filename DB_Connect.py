@@ -3,12 +3,6 @@ import psycopg2
 import json
 import os
 
-
-match_folder = r"C:\Api_Data\match_data"
-
-seed_account ="aSstdTtqhoNflYWFsjsvT1Zg_u0-mJltk_qJ3v80YXazwUlsakbuNzZ8Dsb62jARsH2fbn6rM2q6Ug"
-
-
 class DB_Connection():
 
     def __init__(self):
@@ -26,7 +20,7 @@ class DB_Connection():
 
 
     def insert_match_queue(self,match_id):
-        self.cur.execute(f"INSERT INTO match_queue (match_id) VALUES ({match_id})")
+        self.cur.execute(f"INSERT INTO match_queue (match_id) VALUES ('{match_id}')")
         self.conn.commit()
 
     def check_match_in_queue(self,match_id):
