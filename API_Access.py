@@ -1,7 +1,10 @@
 import json
 from difflib import get_close_matches
 
+from DB_Connect import DB_Connection
 from File_Save import save_match
+import DB_Connect
+
 from creds import API_Key
 import requests
 from datetime import datetime, timezone, timedelta
@@ -12,6 +15,10 @@ match_dir = r"C:/Api_Data/match_data/EUW/"
 
 HEADERS = {"X-Riot-Token": API_Key}
 
+db = DB_Connection()
+
+print(db.check_match_in_queue("euw1"))
+print(db.check_match_in_queue("euw2"))
 
 class ApiAccess:
 
@@ -27,9 +34,12 @@ class ApiAccess:
         for match_id in match_list:
             match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id, headers=HEADERS).json()
             #CREATE METHOD IN DB CONNECT TO CHECK IF MATCH ALREADY STORED
-            save_match(match_id, match_data, match_dir)
+
+            if db.check_match_in_queue(match_id) == False:
+                db.insert_match_queue(match_id)
+                save_match(match_id, match_data, match_dir)
+
             game_version = match_data["info"]
-            print(json.dumps(match_data, indent=4))
             match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
             match_age = datetime.now() - match_date
             print(match_age < timedelta(days=7))
@@ -46,6 +56,8 @@ class ApiAccess:
             os.mkdir(filePath)
             print("created")
 
+
+db.close_connection()
 
 #store_match()
 
