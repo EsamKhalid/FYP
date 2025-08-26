@@ -22,13 +22,11 @@ class ApiAccess:
 
     def get_player_matches(self, max_recency=7):
         match_list =self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
-        #match_list = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100", headers=self.HEADERS).json()
-
         for match_id in match_list:
             if not self.db.check_match_in_queue(match_id):
                 self.db.insert_match_queue(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
-                save_match(match_id, match_data, match_dir)
+                save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
                 print("saved match " + match_id)
                 time.sleep(2)
 
@@ -37,9 +35,6 @@ class ApiAccess:
     def get_match_participants(match_list : list):
         for match_id in match_list:
             match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id, headers=self.HEADERS).json()
-
-
-
             game_version = match_data["info"]
             match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
             match_age = datetime.now() - match_date
@@ -70,22 +65,6 @@ class ApiAccess:
                 print(f"Request failed: {e}")
                 time.sleep(2 ** attempt)
         return None
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # def store_match(patch_version):
     #     filePath = match_dir + "1.2.3"
