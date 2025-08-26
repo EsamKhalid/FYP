@@ -24,12 +24,15 @@ def get_player_matches(puuid, max_recency = 7):
 def get_match_participants(matchList):
     for match_id in matchList:
         match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id,headers=HEADERS).json()
+        game_version = match_data["info"]
+        print(json.dumps(match_data, indent=4))
         match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
         match_age = datetime.now() - match_date
-        print(match_age > timedelta(days=7))
+        print(match_age < timedelta(days=7))
 
         print(datetime.now() - match_date)
         time.sleep(1.5)
+        break
 
 
 def store_match(patch_version):
