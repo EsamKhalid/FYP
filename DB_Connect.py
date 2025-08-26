@@ -11,4 +11,6 @@ seed_account ="aSstdTtqhoNflYWFsjsvT1Zg_u0-mJltk_qJ3v80YXazwUlsakbuNzZ8Dsb62jARs
 
 api = API_Access.ApiAccess(seed_account)
 
-print(api.get_player_matches())
+match_list = api.get_player_matches()
+
+print(api.get_match_participants(match_list))
