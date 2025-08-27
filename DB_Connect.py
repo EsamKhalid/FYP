@@ -34,7 +34,8 @@ class DBConnection:
         return False
 
     def insert_player(self, puuid, region, last_scraped, rank, division, lp):
-        self.cur.execute(f"INSERT INTO players (puuid, region, last_scraped, current_rank, current_division, current_lp) VALUES ('{puuid}','{region}','{last_scraped}','{rank}','{division}','{lp}')")
+        self.cur.execute(f"INSERT INTO players (puuid, region, last_scraped, current_rank, current_division, current_lp) VALUES ('{puuid}','{region}','{last_scraped}','{rank}','{division}','{lp}') "
+                         f"ON CONFLICT (puuid) DO UPDATE SET last_scraped = '{last_scraped}', current_rank = '{rank}', current_division ='{division}', current_lp = '{lp}'")
         print("inserted player to DB")
         self.conn.commit()
 
