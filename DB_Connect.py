@@ -17,12 +17,18 @@ class DB_Connection():
         self.cur.close()
         self.conn.close()
 
-    def insert_match_queue(self,match_id):
-        self.cur.execute(f"INSERT INTO match_queue (match_id) VALUES ('{match_id}')")
+    def insert_match_queue(self,match_id, date):
+        self.cur.execute(f"INSERT INTO match_queue (match_id, date_scraped, scraped) VALUES ('{match_id}','{date}','True')")
         self.conn.commit()
 
     def check_match_in_queue(self,match_id):
         self.cur.execute(f"SELECT * FROM match_queue WHERE match_id='{match_id}';")
+        if self.cur.fetchall():
+            return True
+        return False
+
+    def match_scraped(self, match_id):
+        self.cur.execute(f"SELECT * FROM match_queue WHERE match_id = '{match_id}' AND scraped = 'True'")
         if self.cur.fetchall():
             return True
         return False
