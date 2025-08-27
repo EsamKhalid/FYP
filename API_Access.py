@@ -17,14 +17,14 @@ prev_patch = 15.16
 acceptable_patch = 15.15
 
 rank_map = {
-    "Iron IV": 0, "Iron III": 1, "Iron II": 2, "Iron I": 3,
-    "Bronze IV": 4, "Bronze III": 5, "Bronze II": 6, "Bronze I": 7,
-    "Silver IV": 8, "Silver III": 9, "Silver II": 10, "Silver I": 11,
-    "Gold IV": 12, "Gold III": 13, "Gold II": 14, "Gold I": 15,
-    "Platinum IV": 16, "Platinum III": 17, "Platinum II": 18, "Platinum I": 19,
-    "Emerald IV": 20, "Emerald III": 21, "Emerald II": 22, "Emerald I": 23,
-    "Diamond IV": 24, "Diamond III": 25, "Diamond II": 26, "Diamond I": 27,
-    "Master": 28, "Grandmaster": 29, "Challenger": 30
+    "IRON IV": 0, "IRON III": 1, "IRON II": 2, "IRON I": 3,
+    "BRONZE IV": 4, "BRONZE III": 5, "BRONZE II": 6, "BRONZE I": 7,
+    "SILVER IV": 8, "SILVER III": 9, "SILVER II": 10, "SILVER I": 11,
+    "GOLD IV": 12, "GOLD III": 13, "GOLD II": 14, "GOLD I": 15,
+    "PLATINUM IV": 16, "PLATINUM III": 17, "PLATINUM II": 18, "PLATINUM I": 19,
+    "EMERALD IV": 20, "EMERALD III": 21, "EMERALD II": 22, "EMERALD I": 23,
+    "DIAMOND IV": 24, "DIAMOND III": 25, "DIAMOND II": 26, "DIAMOND I": 27,
+    "MASTER I": 28, "GRANDMASTER I": 29, "CHALLENGER I": 30
 }
 
 int_to_rank = {v: k for k, v in rank_map.items()}
@@ -39,14 +39,17 @@ class ApiAccess:
         match_list =self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
         for match_id in match_list:
             if not self.db.match_scraped(match_id):
-                self.db.insert_match_queue(match_id)
+                #self.db.insert_match_queue(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+                average_rank = int_to_rank[self.get_match_participants(match_data)]
+                print(average_rank)
                 #save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
                 print("saved match " + match_id)
-                time.sleep(2)
+                break
+                time.sleep(1.2)
 
 
-    #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
+    #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE WITH THE PUUID OF THE PLAYER
 
     def get_average_rank(self, rankList : list[str]) -> int:
         total = 0
@@ -58,19 +61,13 @@ class ApiAccess:
     def get_match_participants(self,match_data):
         rank_list = []
         for participant in match_data["metadata"]["participants"]:
-            self.api_call(f"https://europe.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")
-
-    # def get_match_participants(self, match_list : list):
-    #     for match_id in match_list:
-    #         match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id, headers=self.HEADERS).json()
-    #         game_version = match_data["info"]
-    #         match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
-    #         match_age = datetime.now() - match_date
-    #         print(match_age < timedelta(days=7))
-    #
-    #         print(datetime.now() - match_date)
-    #         time.sleep(1.5)
-    #         break
+            #BEFORE CALLING THIS API CHECK IF THE PLAYER IS ALREADY IN THE RANK SNAPSHOT TABLE IF SNAPSHOT AGE < 7 DAYS: DONT CALL API
+            player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
+            #NOW THAT WE HAVE RANK WE CAN INSERT INTO RANK SNAPSHOT TABLE
+            rank_list.append(player_details["tier"] + " " + player_details["rank"])
+            print("Rank: " + player_details["tier"] + " " + player_details["rank"])
+            time.sleep(1.2)
+        return self.get_average_rank(rank_list)
 
     def api_call(self, url :str, max_retries = 3) -> json:
         for attempt in range(max_retries):
@@ -102,4 +99,3 @@ class ApiAccess:
     #         os.mkdir(filePath)
     #         print("created")
     #
-
