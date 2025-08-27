@@ -3,7 +3,7 @@ import psycopg2
 import json
 import os
 
-class DB_Connection():
+class DBConnection:
 
     def __init__(self):
         self.conn = psycopg2.connect(database = "riot_data",
@@ -32,4 +32,9 @@ class DB_Connection():
         if self.cur.fetchall():
             return True
         return False
+
+    def insert_player(self, puuid, region, last_scraped, rank, division, lp):
+        self.cur.execute(f"INSERT INTO players (puuid, region, last_scraped, current_rank, current_division, current_lp) VALUES ('{puuid}','{region}','{last_scraped}','{rank}','{division}','{lp}')")
+        print("inserted player to DB")
+        self.conn.commit()
 

@@ -1,9 +1,9 @@
-from DB_Connect import DB_Connection
+from DB_Connect import DBConnection
 from API_Access import ApiAccess
 
 seed_account ="aSstdTtqhoNflYWFsjsvT1Zg_u0-mJltk_qJ3v80YXazwUlsakbuNzZ8Dsb62jARsH2fbn6rM2q6Ug"
 
-db = DB_Connection()
+db = DBConnection()
 
 api = ApiAccess(db,seed_account)
 api.get_player_matches()
@@ -13,5 +13,6 @@ players = ["Gold II", "Platinum IV", "Platinum III", "Gold I",
            "Platinum I", "Gold II"]
 
 #api.get_average_rank(players)
+
 
 db.close_connection()

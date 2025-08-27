@@ -1,6 +1,6 @@
 import json
 
-from DB_Connect import DB_Connection
+from DB_Connect import DBConnection
 from File_Save import save_match
 import DB_Connect
 
@@ -30,26 +30,26 @@ rank_map = {
 int_to_rank = {v: k for k, v in rank_map.items()}
 
 class ApiAccess:
-    def __init__(self, db , seed):
+    def __init__(self, db : DBConnection , seed):
         self.seed = seed
         self.db = db
         self.HEADERS = {"X-Riot-Token": API_Key}
 
     def get_player_matches(self, max_recency=7):
-        match_list =self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
+        #SEED SHOULD BE THE FIRST NON SCRAPED PLAYER IN PLAYER LIST
+        match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
         for match_id in match_list:
             if not self.db.match_scraped(match_id):
                 #self.db.insert_match_queue(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
                 average_rank = int_to_rank[self.get_match_participants(match_data)]
-                print(average_rank)
                 #save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
                 print("saved match " + match_id)
                 break
                 time.sleep(1.2)
 
 
-    #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE WITH THE PUUID OF THE PLAYER
+    #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
 
     def get_average_rank(self, rankList : list[str]) -> int:
         total = 0
@@ -63,11 +63,30 @@ class ApiAccess:
         for participant in match_data["metadata"]["participants"]:
             #BEFORE CALLING THIS API CHECK IF THE PLAYER IS ALREADY IN THE RANK SNAPSHOT TABLE IF SNAPSHOT AGE < 7 DAYS: DONT CALL API
             player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
+            rank = player_details["tier"]
+            division = player_details["rank"]
+            lp = player_details["leaguePoints"]
+            self.db.insert_player(participant, "EUW", datetime.now(), rank,division,lp)
+            print(player_details)
             #NOW THAT WE HAVE RANK WE CAN INSERT INTO RANK SNAPSHOT TABLE
-            rank_list.append(player_details["tier"] + " " + player_details["rank"])
-            print("Rank: " + player_details["tier"] + " " + player_details["rank"])
+            rank_list.append(rank + " " + division)
+            print("Rank: " + rank + " " + division)
             time.sleep(1.2)
         return self.get_average_rank(rank_list)
+
+
+
+    # def get_match_participants(self, match_list : list):
+    #     for match_id in match_list:
+    #         match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id, headers=self.HEADERS).json()
+    #         game_version = match_data["info"]
+    #         match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
+    #         match_age = datetime.now() - match_date
+    #         print(match_age < timedelta(days=7))
+    #
+    #         print(datetime.now() - match_date)
+    #         time.sleep(1.5)
+    #         break
 
     def api_call(self, url :str, max_retries = 3) -> json:
         for attempt in range(max_retries):
