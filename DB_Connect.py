@@ -1,7 +1,6 @@
-from datetime import datetime, timezone
 import psycopg2
-import json
-import os
+from psycopg2.extras import DictCursor
+
 
 class DBConnection:
 
@@ -11,7 +10,7 @@ class DBConnection:
                         host = "localhost",
                         password = "UniProj26",
                         port = "5432")
-        self.cur = self.conn.cursor()
+        self.cur = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     def close_connection(self):
         self.cur.close()
@@ -38,4 +37,12 @@ class DBConnection:
                          f"ON CONFLICT (puuid) DO UPDATE SET last_scraped = '{last_scraped}', current_rank = '{rank}', current_division ='{division}', current_lp = '{lp}'")
         print("inserted player to DB")
         self.conn.commit()
+
+    def check_player_rank(self, puuid):
+        #RETURN RANK, DATETIME OF SCRAPE
+        self.cur.execute(f"SELECT * FROM players WHERE puuid = '{puuid}'")
+        player = self.cur.fetchall()
+        if player:
+            return player
+        return False
 

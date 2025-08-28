@@ -61,13 +61,20 @@ class ApiAccess:
     def get_match_participants(self,match_data):
         rank_list = []
         for participant in match_data["metadata"]["participants"]:
-            #BEFORE CALLING THIS API CHECK IF THE PLAYER IS ALREADY IN THE RANK SNAPSHOT TABLE IF SNAPSHOT AGE < 7 DAYS: DONT CALL API
-            player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
-            rank = player_details["tier"]
-            division = player_details["rank"]
-            lp = player_details["leaguePoints"]
-            self.db.insert_player(participant, "EUW", datetime.now(), rank,division,lp)
-            print(player_details)
+            #BEFORE CALLING THIS API CHECK IF THE PLAYER IS ALREADY IN THE RANK SNAPSHOT TABLE IF SNAPSHOT AGE < 14 DAYS: DONT CALL API
+            db_player = self.db.check_player_rank(participant)
+            if db_player:
+                db_player = db_player[0]
+                time_diff = datetime.now(timezone.utc) - db_player["last_scraped"]
+                rank = db_player["current_rank"]
+                division = db_player["current_division"]
+                lp = db_player["current_lp"]
+            else:
+                player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
+                rank = player_details["tier"]
+                division = player_details["rank"]
+                lp = player_details["leaguePoints"]
+                self.db.insert_player(participant, "EUW", datetime.now(), rank,division,lp)
             #NOW THAT WE HAVE RANK WE CAN INSERT INTO RANK SNAPSHOT TABLE
             rank_list.append(rank + " " + division)
             print("Rank: " + rank + " " + division)
