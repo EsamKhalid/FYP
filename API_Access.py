@@ -41,10 +41,11 @@ class ApiAccess:
         match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
         for match_id in match_list:
             if not self.db.match_scraped(match_id):
-                #self.db.insert_match_queue(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
                 average_rank = int_to_rank[self.get_match_participants(match_data)]
-                #save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
+                game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
+                save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
+                self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
                 print("saved match " + match_id)
                 break
                 time.sleep(1.2)
@@ -62,12 +63,10 @@ class ApiAccess:
     def get_match_participants(self,match_data):
         rank_list = []
         for participant in match_data["metadata"]["participants"]:
-            #BEFORE CALLING THIS API CHECK IF THE PLAYER IS ALREADY IN THE RANK SNAPSHOT TABLE IF SNAPSHOT AGE < 14 DAYS: DONT CALL API
             db_player = self.db.check_player_rank(participant)
             if db_player:
                 db_player = db_player[0]
                 time_diff = datetime.now(timezone.utc) - db_player["last_scraped"]
-                print(time_diff)
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(participant)
                 else:

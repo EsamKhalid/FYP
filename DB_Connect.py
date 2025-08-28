@@ -46,5 +46,10 @@ class DBConnection:
             return player
         return False
 
+    def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank_tier):
+        self.cur.execute(f"INSERT INTO matches (match_id, game_start, game_duration, patch_version, raw_data, rank_tier) "
+                         f"VALUES ('{match_id}','{game_start}','{game_duration}','{patch_version}','{raw_data}','{rank_tier}')")
+        self.conn.commit()
+
 
 
