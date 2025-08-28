@@ -52,7 +52,7 @@ class ApiAccess:
 
     #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
     @staticmethod
-    def get_average_rank(self, rank_list : list[str]) -> int:
+    def get_average_rank(rank_list : list[str]) -> int:
         total = 0
         for rank in rank_list:
             total += rank_map[rank]
@@ -68,18 +68,13 @@ class ApiAccess:
                 db_player = db_player[0]
                 time_diff = datetime.now(timezone.utc) - db_player["last_scraped"]
                 print(time_diff)
-                if time_diff > timedelta(days=7) or time_diff < timedelta(-7):
+                if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(participant)
                 else:
                     ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
             else:
                 ranks = self.get_player_rank(participant)
-                # player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
-                # rank = player_details["tier"]
-                # division = player_details["rank"]
-                # lp = player_details["leaguePoints"]
-                self.db.insert_player(participant, "EUW", datetime.now(), ranks["rank"],ranks["division"],ranks["lp"])
-            #NOW THAT WE HAVE RANK WE CAN INSERT INTO RANK SNAPSHOT TABLE
+
             rank_list.append(ranks["rank"] + " " + ranks["division"])
             print("Rank: " + ranks["rank"] + " " + ranks["division"])
             time.sleep(1.2)
@@ -90,6 +85,7 @@ class ApiAccess:
         rank = player_details["tier"]
         division = player_details["rank"]
         lp = player_details["leaguePoints"]
+        self.db.insert_player(puuid, "EUW", datetime.now(), rank, division, lp)
         return {"rank" : rank, "division" : division, "lp" : lp}
 
 
