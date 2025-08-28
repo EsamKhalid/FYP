@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from DB_Connect import DBConnection
 from File_Save import save_match
@@ -50,10 +51,10 @@ class ApiAccess:
 
 
     #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
-
-    def get_average_rank(self, rankList : list[str]) -> int:
+    @staticmethod
+    def get_average_rank(self, rank_list : list[str]) -> int:
         total = 0
-        for rank in rankList:
+        for rank in rank_list:
             total += rank_map[rank]
         total = round(total / 10)
         return total
@@ -66,21 +67,30 @@ class ApiAccess:
             if db_player:
                 db_player = db_player[0]
                 time_diff = datetime.now(timezone.utc) - db_player["last_scraped"]
-                rank = db_player["current_rank"]
-                division = db_player["current_division"]
-                lp = db_player["current_lp"]
+                print(time_diff)
+                if time_diff > timedelta(days=7) or time_diff < timedelta(-7):
+                    ranks = self.get_player_rank(participant)
+                else:
+                    ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
             else:
-                player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
-                rank = player_details["tier"]
-                division = player_details["rank"]
-                lp = player_details["leaguePoints"]
-                self.db.insert_player(participant, "EUW", datetime.now(), rank,division,lp)
+                ranks = self.get_player_rank(participant)
+                # player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{participant}")[0]
+                # rank = player_details["tier"]
+                # division = player_details["rank"]
+                # lp = player_details["leaguePoints"]
+                self.db.insert_player(participant, "EUW", datetime.now(), ranks["rank"],ranks["division"],ranks["lp"])
             #NOW THAT WE HAVE RANK WE CAN INSERT INTO RANK SNAPSHOT TABLE
-            rank_list.append(rank + " " + division)
-            print("Rank: " + rank + " " + division)
+            rank_list.append(ranks["rank"] + " " + ranks["division"])
+            print("Rank: " + ranks["rank"] + " " + ranks["division"])
             time.sleep(1.2)
         return self.get_average_rank(rank_list)
 
+    def get_player_rank(self, puuid : str) -> dict[str, Any]:
+        player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")[0]
+        rank = player_details["tier"]
+        division = player_details["rank"]
+        lp = player_details["leaguePoints"]
+        return {"rank" : rank, "division" : division, "lp" : lp}
 
 
     # def get_match_participants(self, match_list : list):
