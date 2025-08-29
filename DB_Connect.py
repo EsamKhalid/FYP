@@ -2,7 +2,6 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from creds import DBPASS
 
-
 class DBConnection:
 
     def __init__(self):
@@ -27,8 +26,8 @@ class DBConnection:
     #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):
         #RETURN RANK, DATETIME OF SCRAPE
-        self.cur.execute(f"SELECT * FROM players WHERE puuid = '{puuid}'")
-        player = self.cur.fetchall()
+        self.cur.execute(f"SELECT 1 FROM players WHERE puuid = '{puuid}'")
+        player = self.cur.fetchone()
         if player:
             return player
         return False
@@ -57,3 +56,7 @@ class DBConnection:
     def set_scrape_complete(self, puuid):
         self.cur.execute(f"UPDATE players SET scrape_complete = 'True' WHERE puuid = '{puuid}'")
         self.conn.commit()
+
+    def insert_participant(self, participant_data):
+        self.cur.execute(f"INSERT INTO participants")
+        pass

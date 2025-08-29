@@ -3,15 +3,13 @@ from typing import Any
 
 from DB_Connect import DBConnection
 from File_Save import save_match
-import DB_Connect
 
 from creds import API_Key
 import requests
 from datetime import datetime, timezone, timedelta
 import time
-import os
 
-match_dir = r"C:/Api_Data/match_data/EUW/"
+import sys #for debugging
 
 current_patch = 15.17
 prev_patch = 15.16
@@ -42,18 +40,18 @@ class ApiAccess:
         for match_id in match_list:
             if not self.db.match_saved(match_id):
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+                #caclulate average rank for all players
                 average_rank = int_to_rank[self.get_match_participants(match_data,seed)]
                 game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
+                #saves match to disk
                 save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
+                #inserts match to database
                 self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
                 print("saved match " + match_id)
                 break
                 time.sleep(1.2)
-        #MAKE A METHOD THAT SETS SCRAPED TO TRUE FOR THE SEED IF IT REACHES THIS POINT
         self.db.set_scrape_complete(seed)
 
-
-    #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
     @staticmethod
     def get_average_rank(rank_list : list[str]) -> int:
         total = 0
@@ -64,22 +62,30 @@ class ApiAccess:
 
     def get_match_participants(self,match_data : json, seed : str) -> int:
         rank_list = []
-        for participant in match_data["metadata"]["participants"]:
-            db_player = self.db.check_player_rank(participant)
+        for participant in match_data["info"]["participants"]:
+            player = participant["puuid"]
+
+            self.db.insert_participant(participant)
+
+            sys.exit("debug")
+            #attempts to access player in database
+            db_player = self.db.check_player_rank(player)
             if db_player:
                 db_player = db_player[0]
                 time_diff = datetime.now(timezone.utc) - db_player["last_rank_check"]
+                #if player rank has not been scraped recently, rescrape for rank accuracy
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
-                    ranks = self.get_player_rank(participant)
+                    ranks = self.get_player_rank(player)
                     time.sleep(1.2)
                 else:
                     ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
                     print("Player already exists in DB")
             else:
-                ranks = self.get_player_rank(participant)
-                #if participant is the seed player, set scraped to true
-                if participant == seed:
-                    self.db.set_player_scraped(participant)
+                #if player does not exist in database at all
+                ranks = self.get_player_rank(player)
+                #if player is the seed player, set scraped to true
+                if player == seed:
+                    self.db.set_player_scraped(player)
                 time.sleep(1.2)
 
             rank_list.append(ranks["rank"] + " " + ranks["division"])
@@ -94,19 +100,6 @@ class ApiAccess:
         lp = player_details["leaguePoints"]
         self.db.insert_player(puuid, "EUW", datetime.now(timezone.utc), rank, division, lp)
         return {"rank" : rank, "division" : division, "lp" : lp}
-
-
-    # def get_match_participants(self, match_list : list):
-    #     for match_id in match_list:
-    #         match_data = requests.get("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id, headers=self.HEADERS).json()
-    #         game_version = match_data["info"]
-    #         match_date = datetime.fromtimestamp(match_data["info"]["gameCreation"] / 1000)
-    #         match_age = datetime.now() - match_date
-    #         print(match_age < timedelta(days=7))
-    #
-    #         print(datetime.now() - match_date)
-    #         time.sleep(1.5)
-    #         break
 
     def api_call(self, url :str, max_retries = 3) -> json:
         for attempt in range(max_retries):
@@ -129,12 +122,3 @@ class ApiAccess:
                 print(f"Request failed: {e}")
                 time.sleep(2 ** attempt)
         return None
-
-    # def store_match(patch_version):
-    #     filePath = match_dir + "1.2.3"
-    #     if os.path.exists(filePath):
-    #         print("exists")
-    #     else:
-    #         os.mkdir(filePath)
-    #         print("created")
-    #
