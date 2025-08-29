@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2.extras import DictCursor
+from creds import DBPASS
 
 
 class DBConnection:
@@ -8,7 +9,7 @@ class DBConnection:
         self.conn = psycopg2.connect(database = "riot_data",
                         user = "postgres",
                         host = "localhost",
-                        password = "UniProj26",
+                        password = DBPASS,
                         port = "5432")
         self.cur = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -41,6 +42,10 @@ class DBConnection:
             print("match exists")
             return True
         return False
+
+    def complete_scrape(self, puuid):
+        self.cur.execute(f"UPDATE players SET scrape_complete = 'True' WHERE puuid = '{puuid}'")
+        self.conn.commit()
 
     # def insert_match_queue(self,match_id, date):
     #     self.cur.execute(f"INSERT INTO match_queue (match_id, date_scraped, scraped) VALUES ('{match_id}','{date}','True')")
