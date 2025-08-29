@@ -36,11 +36,11 @@ class ApiAccess:
         self.db = db
         self.HEADERS = {"X-Riot-Token": API_Key}
 
-    def get_player_matches(self, max_recency=7):
+    def get_player_matches(self,seed : str ,max_recency=7):
         #SEED SHOULD BE THE FIRST NON SCRAPED PLAYER IN PLAYER LIST
         match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
         for match_id in match_list:
-            if not self.db.match_scraped(match_id):
+            if not self.db.match_saved(match_id):
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
                 average_rank = int_to_rank[self.get_match_participants(match_data)]
                 game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
@@ -49,6 +49,7 @@ class ApiAccess:
                 print("saved match " + match_id)
                 break
                 time.sleep(1.2)
+        #MAKE A METHOD THAT SETS SCRAPED TO TRUE FOR THE SEED IF IT REACHES THIS POINT
 
 
     #IF THE PATCH IS TOO OLD, REMOVE ALL MATCHES FROM QUEUE FROM THE PUUID
@@ -60,23 +61,28 @@ class ApiAccess:
         total = round(total / 10)
         return total
 
-    def get_match_participants(self,match_data):
+    def get_match_participants(self,match_data : json) -> str:
         rank_list = []
         for participant in match_data["metadata"]["participants"]:
             db_player = self.db.check_player_rank(participant)
             if db_player:
                 db_player = db_player[0]
-                time_diff = datetime.now(timezone.utc) - db_player["last_scraped"]
+                time_diff = datetime.now(timezone.utc) - db_player["last_rank_check"]
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(participant)
+                    print("player rescraped")
+                    time.sleep(1.2)
                 else:
                     ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
+                    print("player exists")
             else:
                 ranks = self.get_player_rank(participant)
+                print("player scraped")
+                time.sleep(1.2)
 
             rank_list.append(ranks["rank"] + " " + ranks["division"])
             print("Rank: " + ranks["rank"] + " " + ranks["division"])
-            time.sleep(1.2)
+
         return self.get_average_rank(rank_list)
 
     def get_player_rank(self, puuid : str) -> dict[str, Any]:
