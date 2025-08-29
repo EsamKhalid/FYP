@@ -17,12 +17,14 @@ class DBConnection:
         self.cur.close()
         self.conn.close()
 
+    #inserts player (not match participant) into database to be scraped
     def insert_player(self, puuid, region, last_rank_check, rank, division, lp):
         self.cur.execute(f"INSERT INTO players (puuid, region, last_rank_check, current_rank, current_division, current_lp) VALUES ('{puuid}','{region}','{last_rank_check}','{rank}','{division}','{lp}') "
                          f"ON CONFLICT (puuid) DO UPDATE SET last_rank_check = '{last_rank_check}', current_rank = '{rank}', current_division ='{division}', current_lp = '{lp}'")
         print("inserted player to DB")
         self.conn.commit()
 
+    #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):
         #RETURN RANK, DATETIME OF SCRAPE
         self.cur.execute(f"SELECT * FROM players WHERE puuid = '{puuid}'")
@@ -31,11 +33,13 @@ class DBConnection:
             return player
         return False
 
+    #inserts match into database
     def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank_tier):
         self.cur.execute(f"INSERT INTO matches (match_id, game_start, game_duration, patch_version, raw_data, rank_tier) "
                          f"VALUES ('{match_id}','{game_start}','{game_duration}','{patch_version}','{raw_data}','{rank_tier}')")
         self.conn.commit()
 
+    #checks if match is already saved in database
     def match_saved(self, match_id : str) -> bool:
         self.cur.execute(f"SELECT 1 FROM matches WHERE match_id = '{match_id}'")
         if self.cur.fetchone():
@@ -43,27 +47,13 @@ class DBConnection:
             return True
         return False
 
+    #sets scraped to true if player's match history is accessed
     def set_player_scraped(self, puuid):
         self.cur.execute(f"UPDATE players SET scraped = 'True' WHERE puuid = '{puuid}'")
         self.conn.commit()
         print("set true")
 
+    #sets scrape_complete to true if all valid games have been scraped from the player
     def set_scrape_complete(self, puuid):
         self.cur.execute(f"UPDATE players SET scrape_complete = 'True' WHERE puuid = '{puuid}'")
         self.conn.commit()
-
-    # def insert_match_queue(self,match_id, date):
-    #     self.cur.execute(f"INSERT INTO match_queue (match_id, date_scraped, scraped) VALUES ('{match_id}','{date}','True')")
-    #     self.conn.commit()
-    #
-    # def check_match_in_queue(self,match_id):
-    #     self.cur.execute(f"SELECT * FROM match_queue WHERE match_id='{match_id}';")
-    #     if self.cur.fetchall():
-    #         return True
-    #     return False
-    #
-    # def match_scraped(self, match_id):
-    #     self.cur.execute(f"SELECT * FROM match_queue WHERE match_id = '{match_id}' AND scraped = 'True'")
-    #     if self.cur.fetchall():
-    #         return True
-    #     return False
