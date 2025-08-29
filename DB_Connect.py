@@ -43,7 +43,12 @@ class DBConnection:
             return True
         return False
 
-    def complete_scrape(self, puuid):
+    def set_player_scraped(self, puuid):
+        self.cur.execute(f"UPDATE players SET scraped = 'True' WHERE puuid = '{puuid}'")
+        self.conn.commit()
+        print("set true")
+
+    def set_scrape_complete(self, puuid):
         self.cur.execute(f"UPDATE players SET scrape_complete = 'True' WHERE puuid = '{puuid}'")
         self.conn.commit()
 

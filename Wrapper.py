@@ -6,7 +6,7 @@ seed_account ="aSstdTtqhoNflYWFsjsvT1Zg_u0-mJltk_qJ3v80YXazwUlsakbuNzZ8Dsb62jARs
 db = DBConnection()
 
 api = ApiAccess(db,seed_account)
-api.get_player_matches()
+api.get_player_matches(seed_account)
 
 
 
