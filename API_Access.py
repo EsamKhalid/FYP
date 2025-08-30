@@ -37,6 +37,7 @@ class ApiAccess:
     def get_player_matches(self,seed : str ,max_recency=7):
         #SEED SHOULD BE THE FIRST NON SCRAPED PLAYER IN PLAYER LIST
         match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
+        self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
             if not self.db.match_saved(match_id):
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
@@ -76,18 +77,11 @@ class ApiAccess:
                     time.sleep(1.2)
                 else:
                     ranks = {"rank" : db_player["rank"], "division" : db_player["division"], "lp" : db_player["lp"]}
-                    print("Player already exists in DB")
             else:
                 #if player does not exist in database at all
                 ranks = self.get_player_rank(player)
-                #if player is the seed player, set scraped to true
-                if player == seed:
-                    self.db.set_player_scraped(player, datetime.now(timezone.utc))
                 time.sleep(1.2)
-
             rank_list.append(ranks["rank"] + " " + ranks["division"])
-            print("Rank: " + ranks["rank"] + " " + ranks["division"])
-
         return self.get_average_rank(rank_list)
 
     def get_player_rank(self, puuid : str) -> dict[str, Any]:

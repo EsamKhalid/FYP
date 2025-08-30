@@ -19,7 +19,11 @@ class DBConnection:
     #inserts player (not match participant) into database to be scraped
     def insert_player(self, puuid, region):
         self.cur.execute(f"INSERT INTO players (puuid, region) VALUES ('{puuid}','{region}') ON CONFLICT DO NOTHING")
-        print("inserted player to DB")
+        #Checks rows affected by execute, if > 0 means player was inserted else record already exists
+        if self.cur.rowcount > 0:
+            print("Inserted player")
+        else:
+            print("Player already exists")
         self.conn.commit()
 
     def insert_rank(self, puuid, rank, division, lp, snapshot_date):
