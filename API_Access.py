@@ -11,6 +11,8 @@ import time
 
 import sys #for debugging
 
+match_dir = r"C:/Api_Data/match_data/EUW/"
+
 current_patch = 15.17
 prev_patch = 15.16
 acceptable_patch = 15.15
@@ -40,6 +42,7 @@ class ApiAccess:
         self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
             if not self.db.match_saved(match_id):
+                self.db.insert_match_id(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
                 #caclulate average rank for all players
                 average_rank = int_to_rank[self.get_match_participants(match_data,seed)]
@@ -63,6 +66,7 @@ class ApiAccess:
 
     def get_match_participants(self,match_data : json, seed : str) -> int:
         rank_list = []
+        print(match_data["metadata"]["matchId"])
         for participant in match_data["info"]["participants"]:
             player = participant["puuid"]
             self.db.insert_player(player, "EUW")
@@ -74,13 +78,13 @@ class ApiAccess:
                 #if player rank has not been scraped recently, rescrape for rank accuracy
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(player)
-                    time.sleep(1.2)
+                    time.sleep(1.5)
                 else:
                     ranks = {"rank" : db_player["rank"], "division" : db_player["division"], "lp" : db_player["lp"]}
             else:
                 #if player does not exist in database at all
                 ranks = self.get_player_rank(player)
-                time.sleep(1.2)
+                time.sleep(1.5)
             rank_list.append(ranks["rank"] + " " + ranks["division"])
         return self.get_average_rank(rank_list)
 

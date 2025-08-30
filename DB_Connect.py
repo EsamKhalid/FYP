@@ -40,10 +40,15 @@ class DBConnection:
             return player
         return False
 
+    def insert_match_id(self, match_id):
+        self.cur.execute(f"INSERT INTO MATCHES (match_id) VALUES ('{match_id}')")
+        self.conn.commit()
+
     #inserts match into database
     def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank_tier):
-        self.cur.execute(f"INSERT INTO matches (match_id, game_start, game_duration, patch_version, raw_data, rank_tier) "
-                         f"VALUES ('{match_id}','{game_start}','{game_duration}','{patch_version}','{raw_data}','{rank_tier}')")
+        self.cur.execute(f"UPDATE matches "
+                         f"SET game_start = '{game_start}', game_duration = '{game_duration}', patch_version = '{patch_version}', raw_data = '{raw_data}', rank_tier = '{rank_tier}' "
+                         f"WHERE match_id = '{match_id}'")
         self.conn.commit()
 
     #checks if match is already saved in database
@@ -64,6 +69,6 @@ class DBConnection:
         self.cur.execute(f"UPDATE players SET scrape_complete = 'True' WHERE puuid = '{puuid}'")
         self.conn.commit()
 
-    def insert_participant(self, participant_data):
+    def insert_participant(self,match_id, participant_data):
         self.cur.execute(f"INSERT INTO participants")
         pass
