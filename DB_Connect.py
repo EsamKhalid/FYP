@@ -17,16 +17,20 @@ class DBConnection:
         self.conn.close()
 
     #inserts player (not match participant) into database to be scraped
-    def insert_player(self, puuid, region, last_rank_check, rank, division, lp):
-        self.cur.execute(f"INSERT INTO players (puuid, region, last_rank_check, current_rank, current_division, current_lp) VALUES ('{puuid}','{region}','{last_rank_check}','{rank}','{division}','{lp}') "
-                         f"ON CONFLICT (puuid) DO UPDATE SET last_rank_check = '{last_rank_check}', current_rank = '{rank}', current_division ='{division}', current_lp = '{lp}'")
+    def insert_player(self, puuid, region):
+        self.cur.execute(f"INSERT INTO players (puuid, region) VALUES ('{puuid}','{region}') ON CONFLICT DO NOTHING")
         print("inserted player to DB")
+        self.conn.commit()
+
+    def insert_rank(self, puuid, rank, division, lp, snapshot_date):
+        self.cur.execute(f"INSERT INTO rank_snapshots (puuid, rank, division, lp, snapshot_date) "
+                         f"VALUES ('{puuid}','{rank}','{division}','{lp}','{snapshot_date}')")
         self.conn.commit()
 
     #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):
         #RETURN RANK, DATETIME OF SCRAPE
-        self.cur.execute(f"SELECT 1 FROM players WHERE puuid = '{puuid}'")
+        self.cur.execute(f"SELECT * FROM rank_snapshots WHERE puuid = '{puuid}'")
         player = self.cur.fetchone()
         if player:
             return player
@@ -47,10 +51,9 @@ class DBConnection:
         return False
 
     #sets scraped to true if player's match history is accessed
-    def set_player_scraped(self, puuid):
-        self.cur.execute(f"UPDATE players SET scraped = 'True' WHERE puuid = '{puuid}'")
+    def set_player_scraped(self, puuid, date):
+        self.cur.execute(f"UPDATE players SET scraped = 'True' , last_scraped = '{date}' WHERE puuid = '{puuid}'")
         self.conn.commit()
-        print("set true")
 
     #sets scrape_complete to true if all valid games have been scraped from the player
     def set_scrape_complete(self, puuid):

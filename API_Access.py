@@ -64,28 +64,25 @@ class ApiAccess:
         rank_list = []
         for participant in match_data["info"]["participants"]:
             player = participant["puuid"]
-
-            self.db.insert_participant(participant)
-
-            sys.exit("debug")
+            self.db.insert_player(player, "EUW")
+            #self.db.insert_participant(participant)
             #attempts to access player in database
             db_player = self.db.check_player_rank(player)
             if db_player:
-                db_player = db_player[0]
-                time_diff = datetime.now(timezone.utc) - db_player["last_rank_check"]
+                time_diff = datetime.now(timezone.utc) - db_player["snapshot_date"]
                 #if player rank has not been scraped recently, rescrape for rank accuracy
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(player)
                     time.sleep(1.2)
                 else:
-                    ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
+                    ranks = {"rank" : db_player["rank"], "division" : db_player["division"], "lp" : db_player["lp"]}
                     print("Player already exists in DB")
             else:
                 #if player does not exist in database at all
                 ranks = self.get_player_rank(player)
                 #if player is the seed player, set scraped to true
                 if player == seed:
-                    self.db.set_player_scraped(player)
+                    self.db.set_player_scraped(player, datetime.now(timezone.utc))
                 time.sleep(1.2)
 
             rank_list.append(ranks["rank"] + " " + ranks["division"])
@@ -98,7 +95,7 @@ class ApiAccess:
         rank = player_details["tier"]
         division = player_details["rank"]
         lp = player_details["leaguePoints"]
-        self.db.insert_player(puuid, "EUW", datetime.now(timezone.utc), rank, division, lp)
+        self.db.insert_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
         return {"rank" : rank, "division" : division, "lp" : lp}
 
     def api_call(self, url :str, max_retries = 3) -> json:
