@@ -66,11 +66,10 @@ class ApiAccess:
 
     def get_match_participants(self,match_data : json, seed : str) -> int:
         rank_list = []
-        print(match_data["metadata"]["matchId"])
         for participant in match_data["info"]["participants"]:
             player = participant["puuid"]
             self.db.insert_player(player, "EUW")
-            #self.db.insert_participant(participant)
+            self.db.insert_participant(match_data["metadata"]["matchId"],participant)
             #attempts to access player in database
             db_player = self.db.check_player_rank(player)
             if db_player:
