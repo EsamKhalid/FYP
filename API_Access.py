@@ -44,16 +44,18 @@ class ApiAccess:
             if not self.db.match_saved(match_id):
                 self.db.insert_match_id(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+                game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
+                if (datetime.now() - game_start) > timedelta(days=7):
+                    print("Scraped last 7 days")
+                    break
                 #caclulate average rank for all players
                 average_rank = int_to_rank[self.get_match_participants(match_data,seed)]
-                game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
                 #saves match to disk
                 save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
                 #inserts match to database
                 self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
                 print("saved match " + match_id)
-                break
-                time.sleep(1.2)
+                #time.sleep(1.2)
         self.db.set_scrape_complete(seed)
 
     @staticmethod
@@ -77,13 +79,13 @@ class ApiAccess:
                 #if player rank has not been scraped recently, rescrape for rank accuracy
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(player)
-                    time.sleep(1.5)
+                    #time.sleep(1.5)
                 else:
                     ranks = {"rank" : db_player["rank"], "division" : db_player["division"], "lp" : db_player["lp"]}
             else:
                 #if player does not exist in database at all
                 ranks = self.get_player_rank(player)
-                time.sleep(1.5)
+                #time.sleep(1.5)
             rank_list.append(ranks["rank"] + " " + ranks["division"])
         return self.get_average_rank(rank_list)
 
@@ -101,6 +103,7 @@ class ApiAccess:
                 response = requests.get(url, headers=self.HEADERS, timeout=10)
 
                 if response.status_code == 200:
+                    time.sleep(1.6)
                     return response.json()
                 elif response.status_code == 429:
                     retry_after = int(response.headers.get('Retry-After'), 60)
