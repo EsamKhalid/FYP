@@ -50,12 +50,12 @@ class ApiAccess:
                     self.db.remove_match_id(match_id)
                     print("Scraped last 7 days")
                     break
-                #caclulate average rank for all players
-                average_rank = int_to_rank[self.get_match_participants(match_data,seed)]
+                #caclulate average rank for all players split into rank-division
+                average_rank = int_to_rank[self.get_match_participants(match_data,seed)].split(" ")
                 #saves match to disk
                 save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
                 #inserts match to database
-                self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
+                self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank[0], average_rank[1])
                 print("saved match " + match_id)
                 #time.sleep(1.2)
         self.db.set_scrape_complete(seed)
@@ -77,13 +77,13 @@ class ApiAccess:
             #attempts to access player in database
             db_player = self.db.check_player_rank(player)
             if db_player:
-                time_diff = datetime.now(timezone.utc) - db_player["snapshot_date"]
+                time_diff = datetime.now(timezone.utc) - db_player["rank_date"]
                 #if player rank has not been scraped recently, rescrape for rank accuracy
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(player)
                     #time.sleep(1.5)
                 else:
-                    ranks = {"rank" : db_player["rank"], "division" : db_player["division"], "lp" : db_player["lp"]}
+                    ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
             else:
                 #if player does not exist in database at all
                 ranks = self.get_player_rank(player)
@@ -110,6 +110,7 @@ class ApiAccess:
                 response = requests.get(url, headers=self.HEADERS, timeout=10)
 
                 if response.status_code == 200:
+                    print("queried API")
                     time.sleep(1.6)
                     return response.json()
                 elif response.status_code == 429:
@@ -136,6 +137,7 @@ class ApiAccess:
                 continue
             self.db.update_rank(player["puuid"],player_rank["rank"], player_rank["division"], player_rank["lp"], player_rank["snapshot_date"])
 
+    # Made specifically for rank-division split in matches
     def update_match_ranks(self):
         matches = self.db.query_matches()
         for match in matches:

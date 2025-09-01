@@ -34,9 +34,10 @@ class DBConnection:
     #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):
         #RETURN RANK, DATETIME OF SCRAPE
-        self.cur.execute(f"SELECT * FROM rank_snapshots WHERE puuid = '{puuid}'")
+        self.cur.execute(f"SELECT * FROM players WHERE puuid = '{puuid}'")
         player = self.cur.fetchone()
-        if player:
+        rank = player["current_rank"]
+        if rank:
             return player
         return False
 
@@ -46,9 +47,9 @@ class DBConnection:
         self.conn.commit()
 
     #inserts match into database
-    def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank_tier):
+    def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank, division):
         self.cur.execute(f"UPDATE matches "
-                         f"SET game_start = '{game_start}', game_duration = '{game_duration}', patch_version = '{patch_version}', raw_data = '{raw_data}', rank_tier = '{rank_tier}' "
+                         f"SET game_start = '{game_start}', game_duration = '{game_duration}', patch_version = '{patch_version}', raw_data = '{raw_data}', rank = '{rank}', division = '{division}' "
                          f"WHERE match_id = '{match_id}'")
         self.conn.commit()
 
@@ -88,10 +89,12 @@ class DBConnection:
         self.cur.execute("SELECT rank_tier, COUNT(*) AS match_count FROM matches GROUP BY rank_tier ORDER BY match_count DESC")
         return self.cur.fetchall()
 
+    # Made specifically for rank-division split in matches
     def query_matches(self):
         self.cur.execute("SELECT * FROM matches")
         return self.cur.fetchall()
 
+    # Made specifically for rank-division split in matches
     def update_rank_division(self, match_id, rank, division):
         self.cur.execute(f"UPDATE matches SET rank = '{rank}', division = '{division}' WHERE match_id = '{match_id}'")
         self.conn.commit()
