@@ -88,3 +88,12 @@ class DBConnection:
     def query_players(self):
         self.cur.execute("SELECT * from players")
         return self.cur.fetchall()
+
+    def update_rank(self, puuid, rank, division, lp, date):
+        self.cur.execute(f"UPDATE players SET current_rank = '{rank}', current_division = '{division}', current_lp = '{lp}', rank_date = '{date}' where puuid = '{puuid}'")
+        self.conn.commit()
+
+    def query_rank(self,puuid):
+        self.cur.execute(f"SELECT * FROM rank_snapshots WHERE puuid = '{puuid}'")
+        print("updated rank")
+        return self.cur.fetchone()

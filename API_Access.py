@@ -124,7 +124,10 @@ class ApiAccess:
 
     def update_player_ranks(self):
         players = self.db.query_players()
-
         for player in players:
-            print(player)
+            player_rank = self.db.query_rank(player["puuid"])
+            if not player_rank:
+                continue
+            self.db.update_rank(player["puuid"],player_rank["rank"], player_rank["division"], player_rank["lp"], player_rank["snapshot_date"])
+
 
