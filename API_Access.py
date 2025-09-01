@@ -44,8 +44,10 @@ class ApiAccess:
             if not self.db.match_saved(match_id):
                 self.db.insert_match_id(match_id)
                 match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+                #calculates game age and breaks loop if match scraped is > 7 days old (for rank accuracy)
                 game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
                 if (datetime.now() - game_start) > timedelta(days=7):
+                    self.db.remove_match_id(match_id)
                     print("Scraped last 7 days")
                     break
                 #caclulate average rank for all players
