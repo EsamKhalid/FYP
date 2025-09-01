@@ -27,10 +27,9 @@ class DBConnection:
         self.conn.commit()
 
     #inserts rank to rank snapshot table
-    # def insert_rank(self, puuid, rank, division, lp, snapshot_date):
-    #     self.cur.execute(f"INSERT INTO rank_snapshots (puuid, rank, division, lp, snapshot_date) "
-    #                      f"VALUES ('{puuid}','{rank}','{division}','{lp}','{snapshot_date}')")
-    #     self.conn.commit()
+    def insert_rank(self, puuid, rank, division, lp, date):
+        self.cur.execute(f"UPDATE players SET current_rank = '{rank}', current_division = '{division}', current_lp = '{lp}', rank_date = '{date}' where puuid = '{puuid}'")
+        self.conn.commit()
 
     #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):

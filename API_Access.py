@@ -58,6 +58,7 @@ class ApiAccess:
                 self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
                 print("saved match " + match_id)
                 #time.sleep(1.2)
+                break
         self.db.set_scrape_complete(seed)
 
     @staticmethod
