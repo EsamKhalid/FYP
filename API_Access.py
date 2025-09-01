@@ -31,34 +31,41 @@ rank_map = {
 int_to_rank = {v: k for k, v in rank_map.items()}
 
 class ApiAccess:
-    def __init__(self, db : DBConnection , seed):
-        self.seed = seed
+    def __init__(self, db : DBConnection):
         self.db = db
         self.HEADERS = {"X-Riot-Token": API_Key}
 
-    def get_player_matches(self,seed : str ,max_recency=7):
+    def get_player_matches(self,seed : str):
         #SEED SHOULD BE THE FIRST NON SCRAPED PLAYER IN PLAYER LIST
-        match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + self.seed + "/ids?type=ranked&start=0&count=100")
+        match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + seed + "/ids?type=ranked&start=0&count=100")
         self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
             if not self.db.match_saved(match_id):
-                self.db.insert_match_id(match_id)
-                match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
-                #calculates game age and breaks loop if match scraped is > 7 days old (for rank accuracy)
-                game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
-                if (datetime.now() - game_start) > timedelta(days=7):
-                    self.db.remove_match_id(match_id)
-                    print("Scraped last 7 days")
+                if not self.process_match(match_id):
                     break
-                #caclulate average rank for all players split into rank-division
-                average_rank = int_to_rank[self.get_match_participants(match_data,seed)].split(" ")
-                #saves match to disk
-                save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
-                #inserts match to database
-                self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank[0], average_rank[1])
-                print("saved match " + match_id)
-                #time.sleep(1.2)
         self.db.set_scrape_complete(seed)
+
+    def process_match(self, match_id : str) -> bool:
+        print("Processing Match " + match_id)
+        start = time.time()
+        self.db.insert_match_id(match_id)
+        match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+        # calculates game age and breaks loop if match scraped is > 7 days old (for rank accuracy)
+        game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
+        if (datetime.now() - game_start) > timedelta(days=7):
+            self.db.remove_match_id(match_id)
+            print("Scraped last 7 days")
+            return False
+        # calculate average rank for all players split into rank-division
+        average_rank = int_to_rank[self.get_match_participants(match_data)].split(" ")
+        # saves match to disk
+        save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
+        # inserts match to database
+        self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"],match_data["info"]["gameVersion"], json.dumps(match_data), average_rank[0], average_rank[1])
+        print("saved match " + match_id)
+        # time.sleep(1.2)
+        print("Finished in " + str(round(time.time() - start)) + " seconds")
+        return True
 
     @staticmethod
     def get_average_rank(rank_list : list[str]) -> int:
@@ -68,7 +75,7 @@ class ApiAccess:
         total = round(total / 10)
         return total
 
-    def get_match_participants(self,match_data : json, seed : str) -> int:
+    def get_match_participants(self,match_data : json) -> int:
         rank_list = []
         for participant in match_data["info"]["participants"]:
             player = participant["puuid"]
@@ -104,13 +111,17 @@ class ApiAccess:
         for rank in ranks:
             print(rank)
 
-    def api_call(self, url :str, max_retries = 3) -> json:
+    def complete_incomplete_matches(self):
+        match_list = self.db.get_incomplete_matches()
+        for match in match_list:
+            self.process_match(match["match_id"])
+
+    def api_call(self, url : str, max_retries = 3) -> json:
         for attempt in range(max_retries):
             try:
                 response = requests.get(url, headers=self.HEADERS, timeout=10)
 
                 if response.status_code == 200:
-                    print("queried API")
                     time.sleep(1.6)
                     return response.json()
                 elif response.status_code == 429:

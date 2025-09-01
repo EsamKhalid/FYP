@@ -43,7 +43,7 @@ class DBConnection:
 
     #inserts match id first to allow FK for participants table
     def insert_match_id(self, match_id):
-        self.cur.execute(f"INSERT INTO MATCHES (match_id) VALUES ('{match_id}')")
+        self.cur.execute(f"INSERT INTO MATCHES (match_id) VALUES ('{match_id}') ON CONFLICT DO NOTHING")
         self.conn.commit()
 
     #inserts match into database
@@ -86,7 +86,11 @@ class DBConnection:
 
 
     def get_matches_ranks(self):
-        self.cur.execute("SELECT rank_tier, COUNT(*) AS match_count FROM matches GROUP BY rank_tier ORDER BY match_count DESC")
+        self.cur.execute("SELECT rank, COUNT(*) AS match_count FROM matches GROUP BY rank ORDER BY match_count DESC")
+        return self.cur.fetchall()
+
+    def get_incomplete_matches(self):
+        self.cur.execute(f"SELECT match_id FROM matches WHERE game_start IS NULL")
         return self.cur.fetchall()
 
     # Made specifically for rank-division split in matches

@@ -1,13 +1,14 @@
 from DB_Connect import DBConnection
 from API_Access import ApiAccess
 
-seed_account ="cMvR1ydfnEduKBCHJ7SOA_KLlPBcsIZ7jZMH8mv8AeHbvB9-wSfO-xHXjvTdxWr9EBfxmFHRXj2HLA"
+seed_account ="vm9YlQmcZMOPx34z8Q2SV7iU-X8meP46ponqNt-J0v3DceMoIzZEZEvPKGx19G9fbyAqU5ontRSJvQ"
 
 db = DBConnection()
 
-api = ApiAccess(db,seed_account)
-api.get_player_matches(seed_account)
+api = ApiAccess(db)
+#api.get_player_matches(seed_account)
 
 #api.get_matches_composition()
 
+api.complete_incomplete_matches()
 db.close_connection()
