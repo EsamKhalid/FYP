@@ -10,6 +10,8 @@ api = ApiAccess(db,seed_account)
 
 #api.update_player_ranks()
 
-api.get_matches_composition()
+#api.get_matches_composition()
+
+api.update_match_ranks()
 
 db.close_connection()

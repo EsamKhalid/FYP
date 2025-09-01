@@ -136,4 +136,9 @@ class ApiAccess:
                 continue
             self.db.update_rank(player["puuid"],player_rank["rank"], player_rank["division"], player_rank["lp"], player_rank["snapshot_date"])
 
+    def update_match_ranks(self):
+        matches = self.db.query_matches()
+        for match in matches:
+            rank_split = match["rank"].split(" ")
+            self.db.update_rank_division(match["match_id"], rank_split[0], rank_split[1])
 

@@ -88,6 +88,14 @@ class DBConnection:
         self.cur.execute("SELECT rank_tier, COUNT(*) AS match_count FROM matches GROUP BY rank_tier ORDER BY match_count DESC")
         return self.cur.fetchall()
 
+    def query_matches(self):
+        self.cur.execute("SELECT * FROM matches")
+        return self.cur.fetchall()
+
+    def update_rank_division(self, match_id, rank, division):
+        self.cur.execute(f"UPDATE matches SET rank = '{rank}', division = '{division}' WHERE match_id = '{match_id}'")
+        self.conn.commit()
+
 
     # Made specifically for rank_snapshot merge to players
     def query_players(self):
