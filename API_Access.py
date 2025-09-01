@@ -58,7 +58,6 @@ class ApiAccess:
                 self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"], match_data["info"]["gameVersion"], json.dumps(match_data), average_rank)
                 print("saved match " + match_id)
                 #time.sleep(1.2)
-                break
         self.db.set_scrape_complete(seed)
 
     @staticmethod
@@ -100,6 +99,11 @@ class ApiAccess:
         self.db.insert_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
         return {"rank" : rank, "division" : division, "lp" : lp}
 
+    def get_matches_composition(self):
+        ranks = self.db.get_matches_ranks()
+        for rank in ranks:
+            print(rank)
+
     def api_call(self, url :str, max_retries = 3) -> json:
         for attempt in range(max_retries):
             try:
@@ -123,6 +127,7 @@ class ApiAccess:
                 time.sleep(2 ** attempt)
         return None
 
+    # Made specifically for rank_snapshot merge to players
     def update_player_ranks(self):
         players = self.db.query_players()
         for player in players:
