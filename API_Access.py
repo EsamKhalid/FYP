@@ -121,3 +121,10 @@ class ApiAccess:
                 print(f"Request failed: {e}")
                 time.sleep(2 ** attempt)
         return None
+
+    def update_player_ranks(self):
+        players = self.db.query_players()
+
+        for player in players:
+            print(player)
+

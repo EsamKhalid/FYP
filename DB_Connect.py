@@ -27,10 +27,10 @@ class DBConnection:
         self.conn.commit()
 
     #inserts rank to rank snapshot table
-    def insert_rank(self, puuid, rank, division, lp, snapshot_date):
-        self.cur.execute(f"INSERT INTO rank_snapshots (puuid, rank, division, lp, snapshot_date) "
-                         f"VALUES ('{puuid}','{rank}','{division}','{lp}','{snapshot_date}')")
-        self.conn.commit()
+    # def insert_rank(self, puuid, rank, division, lp, snapshot_date):
+    #     self.cur.execute(f"INSERT INTO rank_snapshots (puuid, rank, division, lp, snapshot_date) "
+    #                      f"VALUES ('{puuid}','{rank}','{division}','{lp}','{snapshot_date}')")
+    #     self.conn.commit()
 
     #checks if player's rank has already been scraped
     def check_player_rank(self, puuid):
@@ -83,3 +83,8 @@ class DBConnection:
     def remove_match_id(self, match_id):
         self.cur.execute(f"DELETE from matches WHERE match_id = '{match_id}'")
         self.conn.commit()
+
+
+    def query_players(self):
+        self.cur.execute("SELECT * from players")
+        return self.cur.fetchall()
