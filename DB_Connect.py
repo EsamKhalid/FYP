@@ -16,6 +16,10 @@ class DBConnection:
         self.cur.close()
         self.conn.close()
 
+    def get_seed(self, rank):
+        self.cur.execute(f"SELECT puuid FROM players WHERE current_rank = '{rank}' AND scraped = 'false' ORDER BY rank_date ASC")
+        return self.cur.fetchone()
+
     #inserts player (not match participant) into database to be scraped
     def insert_player(self, puuid, region):
         self.cur.execute(f"INSERT INTO players (puuid, region) VALUES ('{puuid}','{region}') ON CONFLICT DO NOTHING")
@@ -87,6 +91,10 @@ class DBConnection:
 
     def get_matches_ranks(self):
         self.cur.execute("SELECT rank, COUNT(*) AS match_count FROM matches GROUP BY rank ORDER BY match_count DESC")
+        return self.cur.fetchall()
+
+    def get_matches_count(self):
+        self.cur.execute("SELECT COUNT(*) FROM matches")
         return self.cur.fetchall()
 
     def get_incomplete_matches(self):

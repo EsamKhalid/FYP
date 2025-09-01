@@ -30,13 +30,17 @@ rank_map = {
 
 int_to_rank = {v: k for k, v in rank_map.items()}
 
+desired_distribution = {"IRON" : 0.1, "BRONZE" : 0.1,
+                      "SILVER" : 0.15, "GOLD" : 0.15,
+                      "PLATINUM" : 0.1, "EMERALD" : 0.1, "DIAMOND" : 0.1,
+                      "MASTER" : 0.066, "GRANDMASTER" : 0.067, "CHALLENGER" : 0.067}
+
 class ApiAccess:
     def __init__(self, db : DBConnection):
         self.db = db
         self.HEADERS = {"X-Riot-Token": API_Key}
 
     def get_player_matches(self,seed : str):
-        #SEED SHOULD BE THE FIRST NON SCRAPED PLAYER IN PLAYER LIST
         match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + seed + "/ids?type=ranked&start=0&count=100")
         self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
@@ -56,14 +60,12 @@ class ApiAccess:
             self.db.remove_match_id(match_id)
             print("Scraped last 7 days")
             return False
-        # calculate average rank for all players split into rank-division
         average_rank = int_to_rank[self.get_match_participants(match_data)].split(" ")
-        # saves match to disk
+        # save to disk
         save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
-        # inserts match to database
+        # insert to database
         self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"],match_data["info"]["gameVersion"], json.dumps(match_data), average_rank[0], average_rank[1])
         print("saved match " + match_id)
-        # time.sleep(1.2)
         print("Finished in " + str(round(time.time() - start)) + " seconds")
         return True
 
@@ -81,20 +83,18 @@ class ApiAccess:
             player = participant["puuid"]
             self.db.insert_player(player, "EUW")
             self.db.insert_participant(match_data["metadata"]["matchId"],participant)
-            #attempts to access player in database
+            # checks player presence in database
             db_player = self.db.check_player_rank(player)
             if db_player:
                 time_diff = datetime.now(timezone.utc) - db_player["rank_date"]
-                #if player rank has not been scraped recently, rescrape for rank accuracy
+                # no recent scrape, rescrape
                 if time_diff > timedelta(days=7) or time_diff < timedelta(days=-7):
                     ranks = self.get_player_rank(player)
-                    #time.sleep(1.5)
                 else:
                     ranks = {"rank" : db_player["current_rank"], "division" : db_player["current_division"], "lp" : db_player["current_lp"]}
             else:
-                #if player does not exist in database at all
+                #player not in database, insert
                 ranks = self.get_player_rank(player)
-                #time.sleep(1.5)
             rank_list.append(ranks["rank"] + " " + ranks["division"])
         return self.get_average_rank(rank_list)
 
@@ -106,10 +106,17 @@ class ApiAccess:
         self.db.insert_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
         return {"rank" : rank, "division" : division, "lp" : lp}
 
-    def get_matches_composition(self):
+    def get_matches_composition(self) -> str:
         ranks = self.db.get_matches_ranks()
+        match_count = self.db.get_matches_count()[0]["count"]
+        rank_distribution = {}
+        # Higher number = More need
+        distribution_ratios = {}
         for rank in ranks:
-            print(rank)
+            rank_distribution[rank["rank"]] = round((rank["match_count"] / match_count), 2)
+            distribution_ratios[rank["rank"]] = round(desired_distribution[rank["rank"]] / rank_distribution[rank["rank"]],2)
+        reverse_dist_ratios = {v: k for k, v in distribution_ratios.items()}
+        return reverse_dist_ratios[max(distribution_ratios.values())]
 
     def complete_incomplete_matches(self):
         match_list = self.db.get_incomplete_matches()

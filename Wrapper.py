@@ -10,5 +10,7 @@ api = ApiAccess(db)
 
 #api.get_matches_composition()
 
-api.complete_incomplete_matches()
+print(db.get_seed(api.get_matches_composition()))
+
+#api.complete_incomplete_matches()
 db.close_connection()
