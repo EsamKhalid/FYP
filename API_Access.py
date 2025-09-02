@@ -41,6 +41,7 @@ class ApiAccess:
         self.HEADERS = {"X-Riot-Token": API_Key}
 
     def get_player_matches(self,seed : str):
+        print("scraping " + seed)
         match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + seed + "/ids?type=ranked&start=0&count=100")
         self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
@@ -48,6 +49,10 @@ class ApiAccess:
                 if not self.process_match(match_id):
                     break
         self.db.set_scrape_complete(seed)
+        rank_needed = self.calculate_needed_rank()
+        next_seed = self.db.get_seed(rank_needed)["puuid"]
+        self.get_player_matches(next_seed)
+
 
     def process_match(self, match_id : str) -> bool:
         print("Processing Match " + match_id)
@@ -74,7 +79,7 @@ class ApiAccess:
         total = 0
         for rank in rank_list:
             total += rank_map[rank]
-        total = round(total / 10)
+        total = round(total / len(rank_list))
         return total
 
     def get_match_participants(self,match_data : json) -> int:
@@ -95,27 +100,44 @@ class ApiAccess:
             else:
                 #player not in database, insert
                 ranks = self.get_player_rank(player)
+            if not ranks:
+                continue
             rank_list.append(ranks["rank"] + " " + ranks["division"])
         return self.get_average_rank(rank_list)
 
     def get_player_rank(self, puuid : str) -> dict[str, Any]:
-        player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")[0]
+        player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
+        if not player_details:
+            self.db.remove_player(puuid)
+            return None
+        if len(player_details) == 1:
+            player_details = player_details[0]
+        else:
+            player_details = player_details[1]
+        print(player_details)
         rank = player_details["tier"]
         division = player_details["rank"]
         lp = player_details["leaguePoints"]
         self.db.insert_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
         return {"rank" : rank, "division" : division, "lp" : lp}
 
-    def get_matches_composition(self) -> str:
+    def calculate_needed_rank(self) -> str:
         ranks = self.db.get_matches_ranks()
         match_count = self.db.get_matches_count()[0]["count"]
         rank_distribution = {}
         # Higher number = More need
         distribution_ratios = {}
         for rank in ranks:
-            rank_distribution[rank["rank"]] = round((rank["match_count"] / match_count), 2)
+            if not rank["rank"]:
+                self.complete_incomplete_matches()
+                continue
+            # Actual percentage of rank in database
+            rank_distribution[rank["rank"]] = (rank["match_count"] / match_count)
+            #print(rank["rank"],rank["match_count"],desired_distribution[rank["rank"]], rank_distribution[rank["rank"]])
+            # Ratio needed to reach desired distribution
             distribution_ratios[rank["rank"]] = round(desired_distribution[rank["rank"]] / rank_distribution[rank["rank"]],2)
         reverse_dist_ratios = {v: k for k, v in distribution_ratios.items()}
+        print("Needed Rank: " + reverse_dist_ratios[max(distribution_ratios.values())])
         return reverse_dist_ratios[max(distribution_ratios.values())]
 
     def complete_incomplete_matches(self):

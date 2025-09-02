@@ -85,9 +85,12 @@ class DBConnection:
         self.conn.commit()
 
     def remove_match_id(self, match_id):
-        self.cur.execute(f"DELETE from matches WHERE match_id = '{match_id}'")
+        self.cur.execute(f"DELETE FROM matches WHERE match_id = '{match_id}'")
         self.conn.commit()
 
+    def remove_player(self, puuid):
+        self.cur.execute(f"DELETE FROM players WHERE puuid = '{puuid}'")
+        self.conn.commit()
 
     def get_matches_ranks(self):
         self.cur.execute("SELECT rank, COUNT(*) AS match_count FROM matches GROUP BY rank ORDER BY match_count DESC")
