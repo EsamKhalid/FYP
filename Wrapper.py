@@ -1,19 +1,21 @@
 from DB_Connect import DBConnection
 from API_Access import ApiAccess
 
-seed_account ="ZRLynfMwNWzPsiLGbcatwOXsGNm4DpoUEbWrBn5UeLztw-SLxFufx_HDGoM2uKQ4lR2uO16u1OJzeQ"
+
 
 db = DBConnection()
 
 api = ApiAccess(db)
+
+rank_needed = api.calculate_needed_rank()
+next_seed = db.get_seed(rank_needed)["puuid"]
+api.get_player_matches(next_seed)
+
 #api.get_player_matches(seed_account)
 
-print(api.get_player_rank("ZRLynfMwNWzPsiLGbcatwOXsGNm4DpoUEbWrBn5UeLztw-SLxFufx_HDGoM2uKQ4lR2uO16u1OJzeQ"))
-
-#NEED TO CLEAN UP DATABASE, ACCIDENTALLY INCLUDED RANKED FLEX. LOOP THROUGH EVERY PLAYER AND RECALCULATE THEIR RANK
 
 #api.get_matches_composition()
 
-
-#api.complete_incomplete_matches()
+#api.rerank_matches()
+# api.complete_incomplete_matches()
 db.close_connection()

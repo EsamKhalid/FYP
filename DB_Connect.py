@@ -88,6 +88,10 @@ class DBConnection:
         self.cur.execute(f"DELETE FROM matches WHERE match_id = '{match_id}'")
         self.conn.commit()
 
+    def remove_participants(self,match_id):
+        self.cur.execute(f"DELETE FROM participants WHERE match_id = '{match_id}'")
+        self.conn.commit()
+
     def remove_player(self, puuid):
         self.cur.execute(f"DELETE FROM players WHERE puuid = '{puuid}'")
         self.conn.commit()

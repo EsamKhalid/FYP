@@ -42,7 +42,7 @@ class ApiAccess:
 
     def get_player_matches(self,seed : str):
         print("scraping " + seed)
-        match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + seed + "/ids?type=ranked&start=0&count=100")
+        match_list = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + seed + "/ids?queue=420&type=ranked&start=0&count=100")
         self.db.set_player_scraped(seed, datetime.now(timezone.utc))
         for match_id in match_list:
             if not self.db.match_saved(match_id):
@@ -59,6 +59,8 @@ class ApiAccess:
         start = time.time()
         self.db.insert_match_id(match_id)
         match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
+        if match_data["info"]["queueId"] != 420:
+            return False
         # calculates game age and breaks loop if match scraped is > 7 days old (for rank accuracy)
         game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
         if (datetime.now() - game_start) > timedelta(days=7):
@@ -106,19 +108,22 @@ class ApiAccess:
         return self.get_average_rank(rank_list)
 
     def get_player_rank(self, puuid : str) -> dict[str, Any]:
-        player_details = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
-        if not player_details:
+        response = self.api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
+        if not response:
             self.db.remove_player(puuid)
             return None
-        if len(player_details) == 1:
-            player_details = player_details[0]
+        if len(response) > 1:
+            if response[0]["queueType"] == "RANKED_SOLO_5x5":
+                player_details = response[0]
+            else:
+                player_details = response[1]
         else:
-            player_details = player_details[1]
-        print(player_details)
+            player_details = response[0]
+        print(player_details["queueType"])
         rank = player_details["tier"]
         division = player_details["rank"]
         lp = player_details["leaguePoints"]
-        self.db.insert_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
+        self.db.update_rank(puuid, rank, division, lp, datetime.now(timezone.utc))
         return {"rank" : rank, "division" : division, "lp" : lp}
 
     def calculate_needed_rank(self) -> str:
@@ -184,3 +189,30 @@ class ApiAccess:
             rank_split = match["rank"].split(" ")
             self.db.update_rank_division(match["match_id"], rank_split[0], rank_split[1])
 
+    # Made to re scrape the players after forgetting to filter out ranked flex
+    def rescrape_players(self):
+        players = self.db.query_players()
+        player_count = len(players)
+        count = 1
+        for player in players:
+            print(f"Player {count} / " + str(player_count))
+            self.get_player_rank(player["puuid"])
+            count += 1
+
+    # Made to re rank the matches after player ranks were rescraped
+    def rerank_matches(self):
+        matches = self.db.query_matches()
+        for match in matches:
+            #print(match["raw_data"]["info"]["queueId"])
+            if match["raw_data"]["info"]["queueId"] == 420:
+                print("ok")
+            else:
+                self.db.remove_participants(match["match_id"])
+                self.db.remove_match_id(match["match_id"])
+                print("removed match")
+            # average_rank = int_to_rank[self.get_match_participants(match["raw_data"])].split(" ")
+            # rank = [match["rank"] , match["division"]]
+            # if average_rank != rank:
+            #     print("updated rank")
+            #     print(average_rank, rank)
+            # self.db.update_rank_division(match["match_id"], average_rank[0], average_rank[1])
