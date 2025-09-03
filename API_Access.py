@@ -81,7 +81,7 @@ class ApiAccess:
         total = 0
         for rank in rank_list:
             total += rank_map[rank]
-        total = round(total / len(rank_list))
+        total = round(total / 10)
         return total
 
     def get_match_participants(self,match_data : json) -> int:
@@ -119,7 +119,6 @@ class ApiAccess:
                 player_details = response[1]
         else:
             player_details = response[0]
-        print(player_details["queueType"])
         rank = player_details["tier"]
         division = player_details["rank"]
         lp = player_details["leaguePoints"]
@@ -144,6 +143,24 @@ class ApiAccess:
         reverse_dist_ratios = {v: k for k, v in distribution_ratios.items()}
         print("Needed Rank: " + reverse_dist_ratios[max(distribution_ratios.values())])
         return reverse_dist_ratios[max(distribution_ratios.values())]
+
+    def get_rank_composition(self):
+        ranks = self.db.get_matches_ranks()
+        match_count = self.db.get_matches_count()[0]["count"]
+        rank_distribution = {}
+        # Higher number = More need
+        distribution_ratios = {}
+        for rank in ranks:
+            if not rank["rank"]:
+                self.complete_incomplete_matches()
+                continue
+            # Actual percentage of rank in database
+            rank_distribution[rank["rank"]] = (rank["match_count"] / match_count)
+            # print(rank["rank"],rank["match_count"],desired_distribution[rank["rank"]], rank_distribution[rank["rank"]])
+            # Ratio needed to reach desired distribution
+            distribution_ratios[rank["rank"]] = round(desired_distribution[rank["rank"]] / rank_distribution[rank["rank"]], 2)
+        print(rank_distribution)
+        print(distribution_ratios)
 
     def complete_incomplete_matches(self):
         match_list = self.db.get_incomplete_matches()
@@ -204,15 +221,15 @@ class ApiAccess:
         matches = self.db.query_matches()
         for match in matches:
             #print(match["raw_data"]["info"]["queueId"])
-            if match["raw_data"]["info"]["queueId"] == 420:
-                print("ok")
-            else:
-                self.db.remove_participants(match["match_id"])
-                self.db.remove_match_id(match["match_id"])
-                print("removed match")
-            # average_rank = int_to_rank[self.get_match_participants(match["raw_data"])].split(" ")
-            # rank = [match["rank"] , match["division"]]
-            # if average_rank != rank:
-            #     print("updated rank")
-            #     print(average_rank, rank)
-            # self.db.update_rank_division(match["match_id"], average_rank[0], average_rank[1])
+            # if match["raw_data"]["info"]["queueId"] == 420:
+            #     print("ok")
+            # else:
+            #     self.db.remove_participants(match["match_id"])
+            #     self.db.remove_match_id(match["match_id"])
+            #     print("removed match")
+            average_rank = int_to_rank[self.get_match_participants(match["raw_data"])].split(" ")
+            rank = [match["rank"] , match["division"]]
+            if average_rank != rank:
+                print("updated rank")
+                print(average_rank, rank)
+            self.db.update_rank_division(match["match_id"], average_rank[0], average_rank[1])
