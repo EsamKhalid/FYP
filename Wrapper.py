@@ -7,6 +7,8 @@ db = DBConnection()
 
 api = ApiAccess(db)
 
+#PLEASE GET RID OF DUPLICATES IN PARTICIPANTS TABLE
+
 api.get_rank_composition()
 api.complete_incomplete_matches()
 rank_needed = api.calculate_needed_rank()
