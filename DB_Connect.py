@@ -51,10 +51,14 @@ class DBConnection:
         self.conn.commit()
 
     #inserts match into database
-    def insert_match(self, match_id, game_start, game_duration, patch_version, raw_data, rank, division):
+    def insert_match(self, match_id, game_start, game_duration, patch_version, rank, division):
         self.cur.execute(f"UPDATE matches "
-                         f"SET game_start = '{game_start}', game_duration = '{game_duration}', patch_version = '{patch_version}', raw_data = '{raw_data}', rank = '{rank}', division = '{division}' "
+                         f"SET game_start = '{game_start}', game_duration = '{game_duration}', patch_version = '{patch_version}', rank = '{rank}', division = '{division}' "
                          f"WHERE match_id = '{match_id}'")
+        self.conn.commit()
+
+    def insert_match_data(self, match_id, data):
+        self.cur.execute(f"INSERT INTO match_raw (match_id, raw_data) VALUES ('{match_id}','{data}')")
         self.conn.commit()
 
     #checks if match is already saved in database
@@ -81,7 +85,7 @@ class DBConnection:
                          f"VALUES ('{match_id}','{participant_data["puuid"]}','{participant_data["win"]}','{participant_data["championId"]}','{participant_data["championName"]}',"
                          f"'{participant_data["teamId"]}','{participant_data["teamPosition"]}','{participant_data["kills"]}','{participant_data["deaths"]}','{participant_data["assists"]}',"
                          f"'{participant_data["goldEarned"]}','{participant_data["goldSpent"]}','{(participant_data["totalMinionsKilled"] + participant_data["neutralMinionsKilled"])}',"
-                         f"'{participant_data["totalDamageDealtToChampions"]}','{participant_data["visionScore"]}','{participant_data["champLevel"]}')")
+                         f"'{participant_data["totalDamageDealtToChampions"]}','{participant_data["visionScore"]}','{participant_data["champLevel"]}') ON CONFLICT DO NOTHING")
         self.conn.commit()
 
     def remove_match_id(self, match_id):
@@ -107,6 +111,7 @@ class DBConnection:
     def get_incomplete_matches(self):
         self.cur.execute(f"SELECT match_id FROM matches WHERE game_start IS NULL")
         return self.cur.fetchall()
+
 
     # Made specifically for rank-division split in matches
     def query_matches(self):
@@ -135,3 +140,16 @@ class DBConnection:
         print("updated rank")
         return self.cur.fetchone()
 
+    def ins_mat(self, match_id):
+        self.cur.execute(f"INSERT INTO old_matches (match_id) VALUES ('{match_id}')")
+        self.conn.commit()
+
+    def check_match(self, match_id):
+        self.cur.execute(f"SELECT * FROM old_matches WHERE match_id = '{match_id}'")
+        if self.cur.fetchone():
+            return True
+        return False
+
+    def get_mat(self):
+        self.cur.execute("SELECT * FROM old_matches")
+        return self.cur.fetchall()

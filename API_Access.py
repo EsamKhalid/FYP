@@ -1,4 +1,5 @@
 import json
+from tempfile import tempdir
 from typing import Any
 
 from DB_Connect import DBConnection
@@ -10,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 import time
 
 import sys #for debugging
+import os #temp
 
 match_dir = r"C:/Api_Data/match_data/EUW/"
 
@@ -54,14 +56,16 @@ class ApiAccess:
         self.get_player_matches(next_seed)
 
 
-    def process_match(self, match_id : str) -> bool:
+    def process_match(self, match_id : str):
         print("Processing Match " + match_id)
         start = time.time()
         self.db.insert_match_id(match_id)
         match_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id)
         if match_data["info"]["queueId"] != 420:
+            print("not ranked")
             return False
         # calculates game age and breaks loop if match scraped is > 7 days old (for rank accuracy)
+        print("match date " + str(datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)))
         game_start = datetime.fromtimestamp(match_data["info"]["gameStartTimestamp"] / 1000)
         if (datetime.now() - game_start) > timedelta(days=7):
             self.db.remove_match_id(match_id)
@@ -71,7 +75,8 @@ class ApiAccess:
         # save to disk
         save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
         # insert to database
-        self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"],match_data["info"]["gameVersion"], json.dumps(match_data), average_rank[0], average_rank[1])
+        self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"],match_data["info"]["gameVersion"], average_rank[0], average_rank[1])
+        self.db.insert_match_data(match_id, json.dumps(match_data))
         print("saved match " + match_id)
         print("Finished in " + str(round(time.time() - start)) + " seconds")
         return True
@@ -233,3 +238,28 @@ class ApiAccess:
                 print("updated rank")
                 print(average_rank, rank)
             self.db.update_rank_division(match["match_id"], average_rank[0], average_rank[1])
+
+    def insert_match_data(self):
+        matches = self.db.query_matches()
+        for match in matches:
+            self.db.insert_match_data(match["match_id"], match["raw_data"])
+            print("inserted into " + match["match_id"])
+            pass
+
+    tempdir = r"C:/Api_Data/match_data/EUW/15.16.706.7476"
+
+    def insert_old_matches(self):
+        for file in os.listdir(r"C:/Api_Data/match_data/EUW/15.18.710.2811"):
+            filename = os.fsdecode(file).split("_")
+            self.db.ins_mat(filename[0] + "_" +  filename[1])
+            print(filename[0] + "_" +  filename[1])
+
+    def ins(self):
+        matches = self.db.get_mat()
+        for match in matches:
+            match_id = match["match_id"]
+            if not self.db.match_saved(match_id):
+                if not self.db.check_match(match_id):
+                    continue
+                if not self.process_match(match_id):
+                    continue
