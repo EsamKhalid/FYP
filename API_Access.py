@@ -3,7 +3,7 @@ from tempfile import tempdir
 from typing import Any
 
 from DB_Connect import DBConnection
-from File_Save import save_match
+from File_Save import save_match, save_timeline
 
 from creds import API_Key
 import requests
@@ -14,6 +14,7 @@ import sys #for debugging
 import os #temp
 
 match_dir = r"C:/Api_Data/match_data/EUW/"
+timeline_dir = r"C:/Api_data/timeline_data/EUW/"
 
 current_patch = 15.17
 prev_patch = 15.16
@@ -263,3 +264,17 @@ class ApiAccess:
                     continue
                 if not self.process_match(match_id):
                     continue
+
+    def insert_timeline(self, match_id : str, patch : str):
+        if not self.db.timeline_saved(match_id):
+            timeline_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id + "/timeline")
+            save_timeline(match_id, timeline_data, timeline_dir, patch)
+            self.db.insert_timeline_data(match_id, json.dumps(timeline_data))
+
+    def populate_timeline(self):
+        matches = self.db.query_matches()
+        for match in matches:
+            match_id = match["match_id"]
+            patch = match["patch_version"]
+            print("inserting " + match_id)
+            self.insert_timeline(match_id, patch)

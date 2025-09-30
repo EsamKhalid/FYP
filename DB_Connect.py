@@ -61,6 +61,17 @@ class DBConnection:
         self.cur.execute(f"INSERT INTO match_raw (match_id, raw_data) VALUES ('{match_id}','{data}')")
         self.conn.commit()
 
+    def insert_timeline_data(self, match_id, data):
+        self.cur.execute(f"INSERT INTO timeline_raw (match_id, raw_data) VALUES('{match_id}','{data}') ON CONFLICT DO NOTHING")
+        self.conn.commit()
+
+    def timeline_saved(self, match_id : str) -> bool:
+        self.cur.execute(f"SELECT 1 FROM timeline_raw WHERE match_id = '{match_id}'")
+        if self.cur.fetchone():
+            print("match exists")
+            return True
+        return False
+
     #checks if match is already saved in database
     def match_saved(self, match_id : str) -> bool:
         self.cur.execute(f"SELECT 1 FROM matches WHERE match_id = '{match_id}'")
@@ -110,6 +121,10 @@ class DBConnection:
 
     def get_incomplete_matches(self):
         self.cur.execute(f"SELECT match_id FROM matches WHERE game_start IS NULL")
+        return self.cur.fetchall()
+
+    def get_match_ids(self):
+        self.cur.execute(f"SELECT match_id FROM matches")
         return self.cur.fetchall()
 
 
