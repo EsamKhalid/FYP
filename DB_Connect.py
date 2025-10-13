@@ -2,6 +2,8 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from creds import DBPASS
 
+import os
+
 class DBConnection:
 
     def __init__(self):
@@ -168,3 +170,14 @@ class DBConnection:
     def get_mat(self):
         self.cur.execute("SELECT * FROM old_matches")
         return self.cur.fetchall()
+
+    def remove_wrong_timelines(self):
+        rootdir = "C:/Api_Data/timeline_data"
+        for subdir, dirs, files in os.walk(rootdir):
+            for file in files:
+                parts = file.rsplit('_', 1)
+                result = parts[0]
+                if not self.match_saved(result):
+                    os.remove(subdir+"/"+file)
+                    print(subdir+"/"+file)
+

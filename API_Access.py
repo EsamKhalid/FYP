@@ -77,7 +77,9 @@ class ApiAccess:
         save_match(match_id, match_data, (match_dir + match_data["info"]["gameVersion"]))
         # insert to database
         self.db.insert_match(match_id, game_start, match_data["info"]["gameDuration"],match_data["info"]["gameVersion"], average_rank[0], average_rank[1])
-        self.db.insert_match_data(match_id, json.dumps(match_data))
+        #timeline_data = self.api_call("https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id + "/timeline")
+        #save_timeline(match_id, timeline_data, timeline_dir, match_data["info"]["gameVersion"])
+        #self.db.insert_match_data(match_id, json.dumps(match_data))
         print("saved match " + match_id)
         print("Finished in " + str(round(time.time() - start)) + " seconds")
         return True
