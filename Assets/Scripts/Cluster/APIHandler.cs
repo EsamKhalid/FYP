@@ -1,0 +1,66 @@
+using System;
+using System.Collections;
+using TMPro;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI;
+using Newtonsoft.Json;
+
+public class APIHandler : MonoBehaviour
+{
+    [SerializeField] private TMP_InputField nameField;
+    [SerializeField] private TMP_InputField tagField;
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(this.gameObject);
+    }
+
+    public void OnSubmitButton()
+    {
+        string name = nameField.text;
+        string tag = tagField.text;
+        StartCoroutine(GetPlayerData(name, tag));
+    }
+
+    IEnumerator GetPlayerData(string name, string tag)
+    {
+        string url = "http://127.0.0.1:8000/clusterManager/" + name + "/" + tag;
+        UnityWebRequest request = UnityWebRequest.Get(url);
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            PlayerResponse data = JsonConvert.DeserializeObject<PlayerResponse>(request.downloadHandler.text);
+
+            handleResponse(data);
+            Debug.Log(request.downloadHandler.text);
+        }
+        else
+        {
+            Debug.LogError(request.error);
+        }
+    }
+
+    void handleResponse(PlayerResponse data)
+    {
+
+    }
+}
+
+[System.Serializable]
+public class MatchPoint
+{
+    public float x;
+    public float y;
+    public float z;
+    public bool win;
+}
+
+[System.Serializable]
+public class PlayerResponse
+{
+    public string puuid;
+    public MatchPoint[] points;
+}

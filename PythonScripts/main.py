@@ -6,8 +6,6 @@ import random
 import requests
 from creds import API_KEY
 import time
-
-
 app = FastAPI()
 
 
@@ -15,7 +13,6 @@ def api_call(url: str, max_retries=3) -> json:
     for attempt in range(max_retries):
         try:
             response = requests.get(url, headers={"X-Riot-Token" : API_KEY}, timeout=10)
-
             if response.status_code == 200:
                 time.sleep(0.35)
                 return response.json()
@@ -42,14 +39,9 @@ def get_matches(puuid : str):
     response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=10")
     return response
 
-@app.get("/clusterManager/{name}/{tag}")
-
-def get_player(name : str, tag : str):
-
-    puuid = get_puuid(name, tag)
-    matchList = get_matches(puuid)
+def process_matches(match_list : [str], puuid : str):
     points = []
-    for matchID in matchList:
+    for matchID in match_list:
         matchDataRaw = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/{matchID}")
         for participant in matchDataRaw["info"]["participants"]:
             if participant["puuid"] != puuid:
@@ -59,14 +51,19 @@ def get_player(name : str, tag : str):
                 deaths = participant["deaths"]
                 assists = participant["assists"]
                 win = participant["win"]
-                points.append({"x" : kills, "y" : deaths, "z" : assists, "win" : win})
+                points.append({"x": kills, "y": deaths, "z": assists, "win": win})
                 break
+    return points
+
+@app.get("/clusterManager/{name}/{tag}")
+
+def get_player(name : str, tag : str):
+
+    puuid = get_puuid(name, tag)
+    matchList = get_matches(puuid)
+    points = process_matches(matchList, puuid)
 
     return {
-        "x": random.uniform(-5, 5),
-        "y": random.uniform(-5, 5),
-        "z": random.uniform(-5, 5),
-        "cluster": random.randint(0, 2),
         "puuid" : puuid,
         "points" : points,
     }

@@ -61,23 +61,19 @@ public class ClusterScript : MonoBehaviour
     }
 }
 
-[System.Serializable]
-public class MatchPoint
-{
-    public float x;
-    public float y;
-    public float z;
-    public bool win;
-}
+//[System.Serializable]
+//public class MatchPoint
+//{
+//    public float x;
+//    public float y;
+//    public float z;
+//    public bool win;
+//}
 
-[System.Serializable]
-public class PlayerResponse
-{
-    public float x;
-    public float y;
-    public float z;
-    public int cluster;
-    public string puuid;
-    public MatchPoint[] points;
-}
+//[System.Serializable]
+//public class PlayerResponse
+//{
+//    public string puuid;
+//    public MatchPoint[] points;
+//}
 
