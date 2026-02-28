@@ -31,7 +31,7 @@ public class ClusterScript : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            PlayerResponse data = JsonConvert.DeserializeObject<PlayerResponse>(request.downloadHandler.text);
+            APIResponse data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
 
             handleResponse(data);
             Debug.Log(request.downloadHandler.text);
@@ -42,7 +42,7 @@ public class ClusterScript : MonoBehaviour
         }
     }
 
-    void handleResponse(PlayerResponse data)
+    void handleResponse(APIResponse data)
     {
         foreach (MatchPoint match in data.points)
         {

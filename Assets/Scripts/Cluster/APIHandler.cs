@@ -5,12 +5,14 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using Newtonsoft.Json;
+using UnityEngine.SceneManagement;
 
 public class APIHandler : MonoBehaviour
 {
     [SerializeField] private TMP_InputField nameField;
     [SerializeField] private TMP_InputField tagField;
 
+    public APIResponse data;
     private void Awake()
     {
         DontDestroyOnLoad(this.gameObject);
@@ -32,10 +34,11 @@ public class APIHandler : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            PlayerResponse data = JsonConvert.DeserializeObject<PlayerResponse>(request.downloadHandler.text);
+            APIResponse data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
+            SceneManager.LoadScene("Main");
 
-            handleResponse(data);
-            Debug.Log(request.downloadHandler.text);
+            //handleResponse(data);
+            //Debug.Log(request.downloadHandler.text);
         }
         else
         {
@@ -43,7 +46,7 @@ public class APIHandler : MonoBehaviour
         }
     }
 
-    void handleResponse(PlayerResponse data)
+    void handleResponse(APIResponse data)
     {
 
     }
@@ -59,7 +62,7 @@ public class MatchPoint
 }
 
 [System.Serializable]
-public class PlayerResponse
+public class APIResponse
 {
     public string puuid;
     public MatchPoint[] points;
