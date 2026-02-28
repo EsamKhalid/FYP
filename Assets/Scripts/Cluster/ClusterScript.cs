@@ -33,7 +33,7 @@ public class ClusterScript : MonoBehaviour
         {
             APIResponse data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
 
-            handleResponse(data);
+            //handleResponse(data);
             Debug.Log(request.downloadHandler.text);
         }
         else
@@ -42,13 +42,13 @@ public class ClusterScript : MonoBehaviour
         }
     }
 
-    void handleResponse(APIResponse data)
-    {
-        foreach (MatchPoint match in data.points)
-        {
-            SpawnMatchPoints(match);
-        }
-    }
+    //void handleResponse(APIResponse data)
+    //{
+    //    foreach (MatchPoint match in data.points)
+    //    {
+    //        SpawnMatchPoints(match);
+    //    }
+    //}
 
     void SpawnMatchPoints(MatchPoint match)
     {

@@ -14,7 +14,7 @@ def api_call(url: str, max_retries=3) -> json:
         try:
             response = requests.get(url, headers={"X-Riot-Token" : API_KEY}, timeout=10)
             if response.status_code == 200:
-                time.sleep(0.35)
+                time.sleep(0.5)
                 return response.json()
             elif response.status_code == 429:
                 retry_after = int(response.headers.get('Retry-After'), 60)
@@ -60,11 +60,11 @@ def process_matches(match_list : [str], puuid : str):
 def get_player(name : str, tag : str):
 
     puuid = get_puuid(name, tag)
-    matchList = get_matches(puuid)
-    points = process_matches(matchList, puuid)
+    #matchList = get_matches(puuid)
+    #points = process_matches(matchList, puuid)
 
     return {
         "puuid" : puuid,
-        "points" : points,
+        #"points" : points,
     }
 

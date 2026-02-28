@@ -13,6 +13,7 @@ public class APIHandler : MonoBehaviour
     [SerializeField] private TMP_InputField tagField;
 
     public APIResponse data;
+
     private void Awake()
     {
         DontDestroyOnLoad(this.gameObject);
@@ -34,9 +35,8 @@ public class APIHandler : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            APIResponse data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
+            data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
             SceneManager.LoadScene("Main");
-
             //handleResponse(data);
             //Debug.Log(request.downloadHandler.text);
         }
@@ -65,5 +65,5 @@ public class MatchPoint
 public class APIResponse
 {
     public string puuid;
-    public MatchPoint[] points;
+    //public MatchPoint[] points;
 }

@@ -6,8 +6,8 @@ public class PointSpawner : MonoBehaviour
     private GameObject handlerObject;
     private APIHandler handler;
     private APIResponse response;
+    [SerializeField] private GameObject spherePrefab;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         handlerObject = GameObject.Find("API");
@@ -15,10 +15,13 @@ public class PointSpawner : MonoBehaviour
         response = handler.data;
         Debug.Log(response.puuid);
     }
-
-    // Update is called once per frame
-    void Update()
+    void SpawnMatchPoints(MatchPoint match)
     {
-        
+        Vector3 position = new Vector3(match.x, match.y, match.z);
+        GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);
+        if (match.win)
+            obj.GetComponent<Renderer>().material.color = Color.green;
+        else
+            obj.GetComponent<Renderer>().material.color = Color.red;
     }
 }
