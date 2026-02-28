@@ -13,9 +13,18 @@ public class PointSpawner : MonoBehaviour
         handlerObject = GameObject.Find("API");
         handler = handlerObject.GetComponent<APIHandler>();
         response = handler.data;
-        Debug.Log(response.puuid);
+        PlotPoints(response);
     }
-    void SpawnMatchPoints(MatchPoint match)
+
+    void PlotPoints(APIResponse data)
+    {
+        foreach (MatchPoint point in data.points) 
+        {
+            SpawnMatchPoint(point);
+        }
+    }
+
+    void SpawnMatchPoint(MatchPoint match)
     {
         Vector3 position = new Vector3(match.x, match.y, match.z);
         GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);

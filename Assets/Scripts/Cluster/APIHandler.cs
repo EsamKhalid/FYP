@@ -65,5 +65,5 @@ public class MatchPoint
 public class APIResponse
 {
     public string puuid;
-    //public MatchPoint[] points;
+    public MatchPoint[] points;
 }

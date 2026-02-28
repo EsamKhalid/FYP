@@ -60,11 +60,11 @@ def process_matches(match_list : [str], puuid : str):
 def get_player(name : str, tag : str):
 
     puuid = get_puuid(name, tag)
-    #matchList = get_matches(puuid)
-    #points = process_matches(matchList, puuid)
+    matchList = get_matches(puuid)
+    points = process_matches(matchList, puuid)
 
     return {
         "puuid" : puuid,
-        #"points" : points,
+        "points" : points,
     }
 
