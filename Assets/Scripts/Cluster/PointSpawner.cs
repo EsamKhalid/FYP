@@ -14,12 +14,12 @@ public class PointSpawner : MonoBehaviour
 
     private CameraScript cameraScript;
     private int currentPoint = 0;
+    private int count = 0;
 
     void Awake()
     {
         cameraScript = cameraObject.GetComponent<CameraScript>();
         
-
         MatchPoint[] points = new MatchPoint[10];
 
         pointObjects = new GameObject[10];
@@ -33,10 +33,12 @@ public class PointSpawner : MonoBehaviour
             points[i].win = Random.value < 0.5f;
             SpawnMatchPoint(points[i]);
         }
-        Debug.Log(pointObjects[0]);
         cameraScript.centerTransform = pointObjects[0].transform;
 
-
+        foreach(GameObject pointObject in pointObjects)
+        {
+            Debug.Log(pointObject);
+        }
 
 
 
@@ -56,7 +58,6 @@ public class PointSpawner : MonoBehaviour
 
     void SpawnMatchPoint(MatchPoint match)
     {
-        int count = 0;
         Vector3 position = new Vector3(match.x, match.y, match.z);
         GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);
         pointObjects[count] = obj;
@@ -73,11 +74,7 @@ public class PointSpawner : MonoBehaviour
         {
             currentPoint = 0;
         }
-        else
-        {
-            currentPoint += 1;
-        }
-        Debug.Log(pointObjects[currentPoint]);
         cameraScript.transitionCamera(pointObjects[currentPoint].transform);
+        currentPoint += 1;
     }
 }

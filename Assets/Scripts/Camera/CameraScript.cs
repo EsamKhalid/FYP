@@ -9,8 +9,8 @@ public class CameraScript : MonoBehaviour
     public Transform destinationObject;
     [SerializeField] private float sensitivity = 5f;
     [SerializeField] private float zoomSmoothValue = 10f;
-    [SerializeField] private float maxOrbitDistance = 10f;
-    [SerializeField] private float minOrbitDistance = 2f;
+    [SerializeField] private float maxOrbitDistance = 20f;
+    [SerializeField] private float minOrbitDistance = 5f;
 
     private bool isOrbit = true;
 
