@@ -270,7 +270,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraScript
   centerTransform: {fileID: 1889257253}
-  sensitivity: 5
+  sensitivity: 1
+  zoomSmoothValue: 10
   maxOrbitDistance: 10
   minOrbitDistance: 2
 --- !u!1 &410087039

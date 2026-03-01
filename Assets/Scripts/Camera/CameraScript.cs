@@ -6,6 +6,7 @@ using static UnityEngine.GraphicsBuffer;
 public class CameraScript : MonoBehaviour
 {
     public Transform centerTransform;
+    public Transform destinationObject;
     [SerializeField] private float sensitivity = 5f;
     [SerializeField] private float zoomSmoothValue = 10f;
     [SerializeField] private float maxOrbitDistance = 10f;
@@ -94,5 +95,11 @@ public class CameraScript : MonoBehaviour
 
         transform.position = centerTransform.position + offset;
         transform.LookAt(centerTransform.position);
+    }
+
+    public void transitionCamera()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, destinationObject.position, 5 * Time.deltaTime);
+        centerTransform = destinationObject.transform;
     }
 }
