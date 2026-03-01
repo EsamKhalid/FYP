@@ -5,7 +5,7 @@ using static UnityEngine.GraphicsBuffer;
 
 public class CameraScript : MonoBehaviour
 {
-    [SerializeField] private Transform centerTransform;
+    public Transform centerTransform;
     [SerializeField] private float sensitivity = 5f;
     [SerializeField] private float zoomSmoothValue = 10f;
     [SerializeField] private float maxOrbitDistance = 10f;
@@ -62,12 +62,9 @@ public class CameraScript : MonoBehaviour
         if (Mouse.current == null) { return; }
         if (!Mouse.current.rightButton.isPressed) { return; }
 
-        Debug.Log("moving");
-
         transform.LookAt(centerTransform);
 
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
-
 
         transform.eulerAngles += new Vector3(-mouseDelta.y * sensitivity, mouseDelta.x * sensitivity, 0);
         currentYaw += mouseDelta.x * sensitivity;

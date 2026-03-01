@@ -10,15 +10,25 @@ public class PointSpawner : MonoBehaviour
 
     void Start()
     {
-        handlerObject = GameObject.Find("API");
-        handler = handlerObject.GetComponent<APIHandler>();
-        response = handler.data;
-        PlotPoints(response);
+        MatchPoint[] points = new MatchPoint[10];
+        for (int i = 0; i < points.Length; i++)
+        {
+            points[i] = new MatchPoint();
+            points[i].x = Random.Range(0, 15f);
+            points[i].y = Random.Range(0, 15f);
+            points[i].z = Random.Range(0, 15f);
+            points[i].win = Random.value < 0.5f;
+            SpawnMatchPoint(points[i]);
+        }
+        //handlerObject = GameObject.Find("API");
+        //handler = handlerObject.GetComponent<APIHandler>();
+        //response = handler.data;
+        //PlotPoints(response);
     }
 
-    void PlotPoints(APIResponse data)
+    void PlotPoints(MatchPoint[] points)
     {
-        foreach (MatchPoint point in data.points) 
+        foreach (MatchPoint point in points) 
         {
             SpawnMatchPoint(point);
         }
