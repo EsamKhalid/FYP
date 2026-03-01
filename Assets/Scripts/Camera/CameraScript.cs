@@ -12,7 +12,7 @@ public class CameraScript : MonoBehaviour
     [SerializeField] private float maxOrbitDistance = 10f;
     [SerializeField] private float minOrbitDistance = 2f;
 
-    private bool isOrbit = false;
+    private bool isOrbit = true;
 
     private float currentDistance;
     private float targetDistance;
@@ -32,20 +32,13 @@ public class CameraScript : MonoBehaviour
     }
 
 
+
     void Update()
     {
+
         if (Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame) 
         {
-            isOrbit = !isOrbit;
-            if(!isOrbit)
-            {
-                transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                transform.rotation = Quaternion.identity;
-            }
-            else
-            {
-                currentDistance = 5f;
-            }
+            toggleLock();
         }
 
         handleZoom();
@@ -57,6 +50,22 @@ public class CameraScript : MonoBehaviour
 
         ApplyCameraTransform();
     }
+
+    private void toggleLock()
+    {
+        isOrbit = !isOrbit;
+        if (!isOrbit)
+        {
+            transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            transform.rotation = Quaternion.identity;
+        }
+        else
+        {
+            currentDistance = (maxOrbitDistance + minOrbitDistance) / 2;
+        }
+    }
+
+
 
     private void handleOrbit()
     {
@@ -97,9 +106,9 @@ public class CameraScript : MonoBehaviour
         transform.LookAt(centerTransform.position);
     }
 
-    public void transitionCamera()
+    public void transitionCamera(Transform destinationTransform)
     {
-        transform.position = Vector3.MoveTowards(transform.position, destinationObject.position, 5 * Time.deltaTime);
-        centerTransform = destinationObject.transform;
+        transform.position = Vector3.MoveTowards(transform.position, destinationTransform.position, 1 * Time.deltaTime);
+        centerTransform = destinationTransform;
     }
 }

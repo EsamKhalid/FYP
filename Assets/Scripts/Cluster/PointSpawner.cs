@@ -6,11 +6,24 @@ public class PointSpawner : MonoBehaviour
     private GameObject handlerObject;
     private APIHandler handler;
     private APIResponse response;
-    [SerializeField] private GameObject spherePrefab;
 
-    void Start()
+    private GameObject[] pointObjects;
+
+    [SerializeField] private GameObject spherePrefab;
+    [SerializeField] GameObject cameraObject;
+
+    private CameraScript cameraScript;
+    private int currentPoint = 0;
+
+    void Awake()
     {
+        cameraScript = cameraObject.GetComponent<CameraScript>();
+        
+
         MatchPoint[] points = new MatchPoint[10];
+
+        pointObjects = new GameObject[10];
+
         for (int i = 0; i < points.Length; i++)
         {
             points[i] = new MatchPoint();
@@ -20,6 +33,13 @@ public class PointSpawner : MonoBehaviour
             points[i].win = Random.value < 0.5f;
             SpawnMatchPoint(points[i]);
         }
+        Debug.Log(pointObjects[0]);
+        cameraScript.centerTransform = pointObjects[0].transform;
+
+
+
+
+
         //handlerObject = GameObject.Find("API");
         //handler = handlerObject.GetComponent<APIHandler>();
         //response = handler.data;
@@ -36,11 +56,28 @@ public class PointSpawner : MonoBehaviour
 
     void SpawnMatchPoint(MatchPoint match)
     {
+        int count = 0;
         Vector3 position = new Vector3(match.x, match.y, match.z);
         GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);
+        pointObjects[count] = obj;
         if (match.win)
             obj.GetComponent<Renderer>().material.color = Color.green;
         else
             obj.GetComponent<Renderer>().material.color = Color.red;
+        count += 1;
+    }
+
+    public void nextPoint()
+    {
+        if (currentPoint == pointObjects.Length)
+        {
+            currentPoint = 0;
+        }
+        else
+        {
+            currentPoint += 1;
+        }
+        Debug.Log(pointObjects[currentPoint]);
+        cameraScript.transitionCamera(pointObjects[currentPoint].transform);
     }
 }
