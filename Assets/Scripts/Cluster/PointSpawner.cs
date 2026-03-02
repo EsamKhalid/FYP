@@ -35,13 +35,6 @@ public class PointSpawner : MonoBehaviour
         }
         cameraScript.centerTransform = pointObjects[0].transform;
 
-        foreach(GameObject pointObject in pointObjects)
-        {
-            Debug.Log(pointObject);
-        }
-
-
-
         //handlerObject = GameObject.Find("API");
         //handler = handlerObject.GetComponent<APIHandler>();
         //response = handler.data;
@@ -70,11 +63,27 @@ public class PointSpawner : MonoBehaviour
 
     public void nextPoint()
     {
-        if (currentPoint == pointObjects.Length)
+        if (currentPoint == pointObjects.Length - 1)
         {
             currentPoint = 0;
+            cameraScript.transitionCamera(pointObjects[currentPoint].transform);
         }
+        else
+        {
+            currentPoint += 1;
+            cameraScript.transitionCamera(pointObjects[currentPoint].transform);
+        }
+            
+    }
+
+    public void previousPoint()
+    {
+        if(currentPoint == 0)
+        {
+            currentPoint = pointObjects.Length;
+        }
+        currentPoint -= 1;
         cameraScript.transitionCamera(pointObjects[currentPoint].transform);
-        currentPoint += 1;
+        
     }
 }
