@@ -20,25 +20,27 @@ public class PointSpawner : MonoBehaviour
     {
         cameraScript = cameraObject.GetComponent<CameraScript>();
         
-        MatchPoint[] points = new MatchPoint[10];
+        //MatchPoint[] points = new MatchPoint[10];
 
         pointObjects = new GameObject[10];
 
-        for (int i = 0; i < points.Length; i++)
-        {
-            points[i] = new MatchPoint();
-            points[i].x = Random.Range(0, 15f);
-            points[i].y = Random.Range(0, 15f);
-            points[i].z = Random.Range(0, 15f);
-            points[i].win = Random.value < 0.5f;
-            SpawnMatchPoint(points[i]);
-        }
-        cameraScript.centerTransform = pointObjects[0].transform;
+        //for (int i = 0; i < points.Length; i++)
+        //{
+        //    points[i] = new MatchPoint();
+        //    points[i].x = Random.Range(0, 15f);
+        //    points[i].y = Random.Range(0, 15f);
+        //    points[i].z = Random.Range(0, 15f);
+        //    points[i].win = Random.value < 0.5f;
+        //    SpawnMatchPoint(points[i]);
+        //}
+        //cameraScript.centerTransform = pointObjects[0].transform;
 
-        //handlerObject = GameObject.Find("API");
-        //handler = handlerObject.GetComponent<APIHandler>();
-        //response = handler.data;
-        //PlotPoints(response);
+        handlerObject = GameObject.Find("API");
+        handler = handlerObject.GetComponent<APIHandler>();
+        response = handler.data;
+        MatchPoint[] points = response.points;
+        pointObjects = new GameObject[points.Length];
+        PlotPoints(points);
     }
 
     void PlotPoints(MatchPoint[] points)
