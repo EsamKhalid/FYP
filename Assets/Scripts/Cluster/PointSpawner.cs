@@ -41,6 +41,7 @@ public class PointSpawner : MonoBehaviour
         MatchPoint[] points = response.points;
         pointObjects = new GameObject[points.Length];
         PlotPoints(points);
+        cameraScript.centerTransform = pointObjects[0].transform;
     }
 
     void PlotPoints(MatchPoint[] points)

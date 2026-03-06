@@ -9,7 +9,7 @@ public class CameraScript : MonoBehaviour
     public Transform destinationObject;
     [SerializeField] private float sensitivity = 5f;
     [SerializeField] private float zoomSmoothValue = 10f;
-    [SerializeField] private float maxOrbitDistance = 20f;
+    [SerializeField] private float maxOrbitDistance = 50f;
     [SerializeField] private float minOrbitDistance = 5f;
 
     private bool isOrbit = true;
@@ -90,7 +90,7 @@ public class CameraScript : MonoBehaviour
 
         if (Mathf.Abs(scroll) > 0.01f)
         {
-            targetDistance -= scroll * sensitivity * Time.deltaTime * 100f;
+            targetDistance -= scroll * (sensitivity * 2.5f) * Time.deltaTime * 100f;
             targetDistance = Mathf.Clamp(targetDistance, minOrbitDistance, maxOrbitDistance);
         }
 

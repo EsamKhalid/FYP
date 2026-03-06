@@ -272,8 +272,8 @@ MonoBehaviour:
   centerTransform: {fileID: 0}
   destinationObject: {fileID: 0}
   sensitivity: 1
-  zoomSmoothValue: 10
-  maxOrbitDistance: 10
+  zoomSmoothValue: 5
+  maxOrbitDistance: 30
   minOrbitDistance: 2
 --- !u!1 &367815538
 GameObject:
