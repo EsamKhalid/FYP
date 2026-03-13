@@ -1,32 +1,24 @@
-using Newtonsoft.Json;
-using System;
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 public class plotPCA : MonoBehaviour
 {
 
     [SerializeField] private GameObject spherePrefab;
-    [SerializeField] private float scale;
+
+    [SerializeField] private float scale = 1f;
+    [SerializeField] private float pointSize = 1f;
+
     private PointList pointList;
     private GameObject[] pointObjects;
-    void Start()
-    {
-        pointObjects = new GameObject[pointList.points.Length];
-        Debug.Log(pointObjects);
-        spawnPoints();
-        
-    }
 
-    private void Awake()
+    private float previousScale;
+    private float previousPointSize;
+
+    void Awake()
     {
         StartCoroutine(GetPoints());
-        
     }
 
     IEnumerator GetPoints()
@@ -37,13 +29,10 @@ public class plotPCA : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            //PointList data = JsonUtility.FromJson<PointList>(request.downloadHandler.text);
             pointList = JsonUtility.FromJson<PointList>(request.downloadHandler.text);
 
-            //foreach (Point p in data.points)
-            //{
-            //    SpawnPoint(p);
-            //}
+            SpawnPoints();   // spawn once
+            previousScale = scale;
         }
         else
         {
@@ -51,34 +40,42 @@ public class plotPCA : MonoBehaviour
         }
     }
 
-    GameObject SpawnPoint(Point p, float scale)
+    void SpawnPoints()
     {
-        Vector3 position = new Vector3(p.x * scale, p.y * scale, p.z * scale);
+        pointObjects = new GameObject[pointList.points.Length];
 
-        GameObject sphere = Instantiate(spherePrefab, position, Quaternion.identity);
-        return sphere;
-
-    }
-
-    void spawnPoints()
-    {
-        foreach(GameObject gameObject in pointObjects)
+        for (int i = 0; i < pointList.points.Length; i++)
         {
-            Destroy(gameObject);
-        }
-        
-        int count = 0;
+            Point p = pointList.points[i];
 
-        foreach (Point p in pointList.points)
-        {
-            pointObjects[count] = SpawnPoint(p, scale);
-            count++;
+            Vector3 pos = new Vector3(p.x * scale, p.y * scale, p.z * scale);
+
+            GameObject sphere = Instantiate(spherePrefab, pos, Quaternion.identity);
+            pointObjects[i] = sphere;
         }
     }
 
-    private void Update()
+    void Update()
     {
-        spawnPoints();
+        if (scale != previousScale || pointSize != previousPointSize)
+        {
+            UpdateScale();
+            previousScale = scale;
+            previousPointSize = pointSize;
+        }
+    }
+
+    void UpdateScale()
+    {
+        for (int i = 0; i < pointList.points.Length; i++)
+        {
+            Point p = pointList.points[i];
+
+            Vector3 pos = new Vector3(p.x * scale, p.y * scale, p.z * scale);
+
+            pointObjects[i].transform.position = pos;
+            pointObjects[i].transform.localScale = new Vector3(pointSize, pointSize, pointSize);
+        }
     }
 }
 
