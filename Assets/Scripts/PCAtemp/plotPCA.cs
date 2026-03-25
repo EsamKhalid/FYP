@@ -9,12 +9,14 @@ public class plotPCA : MonoBehaviour
 
     [SerializeField] private float scale = 1f;
     [SerializeField] private float pointSize = 1f;
+    //[SerializeField, Range(0f,1f)] private float transparency = 1f;
 
     private PointList pointList;
     private GameObject[] pointObjects;
 
     private float previousScale;
     private float previousPointSize;
+    //private float previousTransparency;
 
     void Awake()
     {
@@ -62,6 +64,7 @@ public class plotPCA : MonoBehaviour
             UpdateScale();
             previousScale = scale;
             previousPointSize = pointSize;
+            //previousTransparency = transparency;
         }
     }
 
@@ -75,6 +78,7 @@ public class plotPCA : MonoBehaviour
 
             pointObjects[i].transform.position = pos;
             pointObjects[i].transform.localScale = new Vector3(pointSize, pointSize, pointSize);
+            //pointObjects[i].GetComponent<MeshRenderer>().material.color = new Color(1f,1f, 1f, transparency);
         }
     }
 }
