@@ -8,7 +8,6 @@ json_path = '../data/EUW1_7612763297_timeline.json'
 
 rootdir = "C:/Api_Data/combined/timeline_data/EUW"
 
-
 def process_timelines():
 
     matches = 0
@@ -19,6 +18,7 @@ def process_timelines():
             matchId = parts[0]
             filepath = subdir + "/" + file
             with open(filepath, "r") as f:
+                patch_version = subdir.rsplit("\\", 1)[1]
 
                 data = json.load(f)
 
@@ -30,18 +30,13 @@ def process_timelines():
 
                 match_length = len(frames)
 
-
                 if match_length < 15:
-                    break
+                    continue
 
                 frame1 = data["info"]["frames"][0]["participantFrames"]
                 frame10 = data["info"]["frames"][9]["participantFrames"]
                 frame15 = data["info"]["frames"][14]["participantFrames"]
                 last_frame = data["info"]["frames"][-1]["participantFrames"]
-
-
-
-
 
                 for id in range(1, 11):
                     f10 = frame10[str(id)]
@@ -70,16 +65,14 @@ def process_timelines():
                     pca = PCA(n_components=3)
                     pca_results = pca.fit_transform(scaled)
 
-
                     return [{
                         "puuid": puuid_list[i],
                         "match_id" : matchId,
+                        "patch_version" : patch_version,
                         "x": float(pca_results[i, 0]),
                         "y": float(pca_results[i, 1]),
                         "z": float(pca_results[i, 2])
                     } for i in range(len(df))]
-
-
 
                 df = pd.DataFrame(perform_pca())
                 df.to_csv('../data/CSV/PCACoords.csv', mode='a', header=not os.path.exists('../data/CSV/PCACoords.csv'), index=False)

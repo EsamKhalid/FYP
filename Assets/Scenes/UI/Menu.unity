@@ -804,7 +804,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3718e9cf7b32734696ccdab783c3160, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Menus
-  gameSceneName: Main
+  gameSceneName: pcaPoints
 --- !u!1 &961739749
 GameObject:
   m_ObjectHideFlags: 0

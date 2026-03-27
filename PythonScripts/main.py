@@ -12,7 +12,9 @@ app = FastAPI()
 
 csv_path = "../data/pca.csv"
 
-df = pd.read_csv("../data/pca.csv")
+df = pd.read_csv("../data/CSV/PCACoords.csv")
+
+
 
 
 def api_call(url: str, max_retries=3) -> json:
@@ -84,11 +86,23 @@ def get_points():
     points = []
     for _, row in df.iterrows():
         points.append({
+            "puuid" : row["puuid"],
             "match_id": row["match_id"],
-            "participant_id": int(row["participant_id"]),
-            "x": float(row["pc1"]),
-            "y": float(row["pc2"]),
-            "z": float(row["pc3"])
+            "x": float(row["x"]),
+            "y": float(row["y"]),
+            "z": float(row["z"])
         })
+
+    print(points)
     return {"points": points}
 
+
+
+
+
+
+
+
+
+
+get_points()

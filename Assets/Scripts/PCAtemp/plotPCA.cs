@@ -33,6 +33,7 @@ public class plotPCA : MonoBehaviour
         {
             pointList = JsonUtility.FromJson<PointList>(request.downloadHandler.text);
 
+
             SpawnPoints();   // spawn once
             previousScale = scale;
         }
@@ -92,7 +93,7 @@ public class Point
     public float z;
 
     public int match_id;
-    public int participant_id;
+    public string puuid;
 }
 
 [System.Serializable]
