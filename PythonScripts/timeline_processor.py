@@ -15,7 +15,7 @@ participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[["l
 
 count = 0
 
-class TimelineProcessor():
+class TimelineProcessor:
 
     def __init__(self):
         self.conn = psycopg2.connect(database="features_db",
