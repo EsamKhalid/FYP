@@ -60,7 +60,7 @@ class CoordinatesGenerator:
         return final_df
 
     def insert_coordinates(self, df : pd.DataFrame):
-        query = """ INSERT INTO player_coordinates (puuid, match_id, role, x, y, z) VALUES %s ON CONFLICT DO NOTHING"""
+        query = """ INSERT INTO player_coordinates (puuid, match_id, lane, x, y, z) VALUES %s ON CONFLICT DO NOTHING"""
         tuples = [tuple(x) for x in df.to_numpy()]
         execute_values(self.cur, query, tuples)
         self.conn.commit()
