@@ -9,6 +9,9 @@ from PythonScripts.creds import DBPASS
 
 rootdir = "C:/Api_Data/combined/timeline_data/EUW"
 
+rawParticipants = pd.read_csv("../data/participants.csv")
+
+participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[["lane", "champion_name", "kills", "deaths", "assists", "vision_score"]].to_dict())
 
 class TimelineProcessor():
 
@@ -25,8 +28,8 @@ class TimelineProcessor():
         self.conn.close()
 
     def insert_player_feature(self, player_feature):
-        self.cur.execute(f"INSERT INTO player_features (puuid,match_id,gold_7,gold_15,cs_7,cs_15,xp_7,xp_15,gpm,cspm,xpm,dpm)"
-                         f"VALUES ('{player_feature["puuid"]}','{player_feature["match_id"]}','{player_feature["gold_7"]}','{player_feature["gold_15"]}','{player_feature["cs_7"]}','{player_feature["cs_15"]}','{player_feature["xp_7"]}','{player_feature["xp_15"]}','{player_feature["gpm"]}','{player_feature["cspm"]}','{player_feature["xpm"]}','{player_feature["dpm"]}')")
+        self.cur.execute(f"INSERT INTO player_features (puuid,match_id,lane,gold_7,gold_15,cs_7,cs_15,xp_7,xp_15,gpm,cspm,xpm,dpm)"
+                         f"VALUES ('{player_feature["puuid"]}','{player_feature["match_id"]}','{player_feature["lane"]}','{player_feature["gold_7"]}','{player_feature["gold_15"]}','{player_feature["cs_7"]}','{player_feature["cs_15"]}','{player_feature["xp_7"]}','{player_feature["xp_15"]}','{player_feature["gpm"]}','{player_feature["cspm"]}','{player_feature["xpm"]}','{player_feature["dpm"]}')")
         self.conn.commit()
 
     def process_timelines(self):
@@ -45,6 +48,8 @@ class TimelineProcessor():
 
                     player_features = []
 
+                    lane = ""
+
                     puuid_list = data["metadata"]["participants"]
 
                     frames = data['info']['frames']
@@ -62,9 +67,11 @@ class TimelineProcessor():
                         f7 = frame7[str(id)]
                         f15 = frame15[str(id)]
                         lf = last_frame[str(id)]
+                        puuid = puuid_list[id - 1]
                         player_features.append({
-                            "puuid": puuid_list[id - 1],
+                            "puuid": puuid,
                             "match_id" : match_id,
+                            "lane" : participants.loc[(puuid, match_id), "lane"],
                             "gold_7": f7["totalGold"],
                             "gold_15": f15["totalGold"],
                             "cs_7": f7["minionsKilled"] + f7["jungleMinionsKilled"],

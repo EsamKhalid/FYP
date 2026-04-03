@@ -2,18 +2,13 @@ import json
 from http.client import responses
 
 from fastapi import FastAPI
-import random
 import requests
 from creds import API_KEY
+from creds import DBPASS
 import time
 
 import pandas as pd
 app = FastAPI()
-
-csv_path = "../data/pca.csv"
-
-df = pd.read_csv("../data/pca.csv")
-
 
 def api_call(url: str, max_retries=3) -> json:
     for attempt in range(max_retries):
@@ -61,10 +56,6 @@ def process_matches(match_list : [str], puuid : str):
                 break
     return points
 
-def return_points():
-    df = pd.read_csv(csv_path)
-    print(df)
-
 @app.get("/clusterManager/{name}/{tag}")
 
 def get_player(name : str, tag : str):
@@ -77,18 +68,3 @@ def get_player(name : str, tag : str):
         "puuid" : puuid,
         "points" : points,
     }
-
-@app.get("/points")
-
-def get_points():
-    points = []
-    for _, row in df.iterrows():
-        points.append({
-            "match_id": row["match_id"],
-            "participant_id": int(row["participant_id"]),
-            "x": float(row["pc1"]),
-            "y": float(row["pc2"]),
-            "z": float(row["pc3"])
-        })
-    return {"points": points}
-
