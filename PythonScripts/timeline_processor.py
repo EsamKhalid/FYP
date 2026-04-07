@@ -6,6 +6,8 @@ from psycopg2.extras import DictCursor, execute_values
 
 from PythonScripts.creds import DBPASS
 
+import math
+
 
 rootdir = "C:/Api_Data/combined/timeline_data/EUW"
 
@@ -56,6 +58,11 @@ class TimelineProcessor:
                     frame15 = frames[14]["participantFrames"]
                     last_frame = frames[-1]["participantFrames"]
 
+                    all_participant_frames = []
+
+                    for frame in frames:
+                        all_participant_frames.append(frame["participantFrames"])
+
                     for id in range(1, 11):
                         str_id = str(id)
                         f7 = frame7[str_id]
@@ -63,18 +70,54 @@ class TimelineProcessor:
                         lf = last_frame[str_id]
                         puuid = puuid_list[id - 1]
                         lane = participants.loc[(puuid, match_id), "lane"]
+
+                        total_gold = lf["totalGold"]
+                        total_cs = lf["minionsKilled"] + lf["jungleMinionsKilled"]
+                        total_xp = lf["xp"]
+                        total_damage = lf["damageStats"]["totalDamageDoneToChampions"]
+
+                        pre_15_roaming = 0
+                        total_roaming = 0
+
+                        for i in range(0,match_length - 1):
+                            current_position = all_participant_frames[i][str_id]["position"]
+                            next_position = all_participant_frames[i + 1][str_id]["position"]
+                            delta_x = (next_position["x"] - current_position["x"]) ** 2
+                            delta_y = (next_position["y"] - current_position["y"]) ** 2
+                            delta_pos = math.sqrt(delta_x + delta_y)
+                            if i < 14:
+                                pre_15_roaming += delta_pos
+                            total_roaming += delta_pos
+
                         batch_buffer.append((
-                            puuid, match_id, lane,
+                            puuid,
+                            match_id,
+                            lane,
                             f7["totalGold"], f15["totalGold"],
                             f7["minionsKilled"] + f7["jungleMinionsKilled"],
                             f15["minionsKilled"] + f15["jungleMinionsKilled"],
                             f7["xp"], f15["xp"],
-                            round(lf["totalGold"] / match_length),
-                            round((lf["minionsKilled"] + lf["jungleMinionsKilled"]) / match_length),
-                            round(lf["xp"] / match_length),
-                            round(lf.get("damageStats", {}).get("totalDamageDoneToChampions", 0) / match_length)
+                            f7["damageStats"]["totalDamageDoneToChampions"], f15["damageStats"]["totalDamageDoneToChampions"],
+                            round(pre_15_roaming),
+                            total_gold,
+                            total_cs,
+                            total_xp,
+                            total_damage,
+                            lf["damageStats"]["totalDamageTaken"],
+                            round(total_gold / match_length),
+                            round(total_cs / match_length),
+                            round(total_xp / match_length),
+                            round(total_damage / match_length),
+                            round(total_roaming)
                         ))
+                # round(lf["totalGold"] / match_length),
+                # round((lf["minionsKilled"] + lf["jungleMinionsKilled"]) / match_length),
+                # round(lf["xp"] / match_length),
+                # round(lf.get("damageStats", {}).get("totalDamageDoneToChampions", 0) / match_length)
 
+                print(batch_buffer)
+
+                exit()
                 if len(batch_buffer) >= 100:
                     self.batch_insert(batch_buffer)
                     count += len(batch_buffer)
