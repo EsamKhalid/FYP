@@ -13,7 +13,7 @@ rootdir = "C:/Api_Data/combined/timeline_data/EUW"
 
 rawParticipants = pd.read_csv("../data/participants.csv")
 
-participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[["lane", "champion_name", "kills", "deaths", "assists", "vision_score"]].to_dict())
+participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[["lane", "champion_name", "kills", "deaths", "assists", "vision_score", "team_id", "kill_participation", "turret_damage", "objective_damage"]].to_dict())
 
 count = 0
 
@@ -43,11 +43,11 @@ class TimelineProcessor:
             for file in files:
                 match_id = file.rsplit('_', 1)[0]
                 filepath = os.path.join(subdir, file)
-                with open(filepath, "r") as f:
+                with (open(filepath, "r") as f):
                     #patch_version = subdir.rsplit("\\", 1)[1]
                     data = json.load(f)
-                    player_features = []
                     puuid_list = data["metadata"]["participants"]
+
                     frames = data['info']['frames']
                     match_length = len(frames)
 
@@ -57,6 +57,11 @@ class TimelineProcessor:
                     frame7 = frames[6]["participantFrames"]
                     frame15 = frames[14]["participantFrames"]
                     last_frame = frames[-1]["participantFrames"]
+
+                    winning_team = None
+
+                    winning_team = frames[-1]["events"][-1]["winningTeam"]
+
 
                     all_participant_frames = []
 
@@ -68,13 +73,39 @@ class TimelineProcessor:
                         f7 = frame7[str_id]
                         f15 = frame15[str_id]
                         lf = last_frame[str_id]
+
                         puuid = puuid_list[id - 1]
-                        lane = participants.loc[(puuid, match_id), "lane"]
+
+                        lane, team_id, kills, deaths, assists, vision_score, kill_participation, turret_damage, objective_damage  = participants.loc[(puuid, match_id), ["lane", "team_id", "kills", "deaths", "assists", "vision_score", "kill_participation", "turret_damage", "objective_damage"]]
+
+                        team_id = str(team_id)
+                        kills = int(kills)
+                        deaths = int(deaths)
+                        assists = int(assists)
+                        vision_score = int(vision_score)
+                        kill_participation = float(kill_participation)
+                        turret_damage = int(turret_damage)
+                        objective_damage = int(objective_damage)
+
+                        if team_id == winning_team:
+                            win = True
+                        else:
+                            win = False
+
+                        if(kills or assists) > 0:
+                            if deaths == 0:
+                                kda = (kills + assists) / 1
+                            else:
+                                kda = (kills + assists) / deaths
+                        else:
+                            kda = 0
 
                         total_gold = lf["totalGold"]
                         total_cs = lf["minionsKilled"] + lf["jungleMinionsKilled"]
                         total_xp = lf["xp"]
                         total_damage = lf["damageStats"]["totalDamageDoneToChampions"]
+                        total_damage_taken = lf["damageStats"]["totalDamageTaken"]
+                        cc_score = lf["timeEnemySpentControlled"]
 
                         pre_15_roaming = 0
                         total_roaming = 0
@@ -108,16 +139,16 @@ class TimelineProcessor:
                             round(total_cs / match_length),
                             round(total_xp / match_length),
                             round(total_damage / match_length),
-                            round(total_roaming)
+                            kda,
+                            kill_participation,
+                            cc_score,
+                            vision_score,
+                            turret_damage,
+                            objective_damage,
+                            round(total_roaming),
+                            win
                         ))
-                # round(lf["totalGold"] / match_length),
-                # round((lf["minionsKilled"] + lf["jungleMinionsKilled"]) / match_length),
-                # round(lf["xp"] / match_length),
-                # round(lf.get("damageStats", {}).get("totalDamageDoneToChampions", 0) / match_length)
 
-                print(batch_buffer)
-
-                exit()
                 if len(batch_buffer) >= 100:
                     self.batch_insert(batch_buffer)
                     count += len(batch_buffer)
@@ -128,7 +159,7 @@ class TimelineProcessor:
             self.batch_insert(batch_buffer)
 
     def batch_insert(self, data):
-        query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, gpm, cspm, xpm, dpm) 
+        query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
                     VALUES %s 
                     ON CONFLICT DO NOTHING """
         execute_values(self.cur, query, data)
