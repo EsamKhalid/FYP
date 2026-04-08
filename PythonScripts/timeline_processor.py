@@ -160,7 +160,7 @@ class TimelineProcessor:
         if batch_buffer:
             self.batch_insert(batch_buffer)
 
-    def batch_insert(self, data):
+    def insert_features(self, data):
         query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
                     VALUES %s 
                     ON CONFLICT DO NOTHING """
@@ -201,7 +201,7 @@ class TimelineProcessor:
             self.db_insert(df_lane_subset[db_columns])
             print(f"inserted '{lane}'")
 
-    def db_insert(self, insert_df):
+    def insert_standardised(self, insert_df):
         query = "INSERT INTO player_standardised (puuid, match_id, lane, win, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, gpm, cspm, xpm, dpm, total_gold, total_cs, total_xp, total_damage,total_damage_taken, total_roaming_distance, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage) VALUES %s ON CONFLICT DO NOTHING"
         tuples = [tuple(x) for x in insert_df.to_numpy()]
         execute_values(self.cur, query, tuples)
