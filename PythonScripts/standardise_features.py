@@ -1,12 +1,11 @@
 import psycopg2
 from psycopg2.extras import DictCursor, execute_values
 import pandas as pd
-from scipy.interpolate import insert
 from sklearn.preprocessing import StandardScaler
 
 from PythonScripts.creds import DBPASS
 
-class Standardiser():
+class Standardiser:
 
     def __init__(self):
         self.conn = psycopg2.connect(database="features_db",
