@@ -1,5 +1,8 @@
 import json
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 import os
 import psycopg2
 from psycopg2.extras import DictCursor, execute_values
@@ -28,6 +31,14 @@ class TimelineProcessor:
                                      password=DBPASS,
                                      port="5432")
         self.cur = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        self.features = [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
+            'total_damage', 'kda', 'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ]
 
     def close_connection(self):
         self.cur.close()
@@ -158,7 +169,7 @@ class TimelineProcessor:
                     batch_buffer = []
 
         if batch_buffer:
-            self.batch_insert(batch_buffer)
+            self.insert_features(batch_buffer)
 
     def insert_features(self, data):
         query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
@@ -167,21 +178,13 @@ class TimelineProcessor:
         execute_values(self.cur, query, data)
         self.conn.commit()
 
-    def fetch_table(self):
-        self.cur.execute("SELECT * FROM player_features")
+    def fetch_table(self, table_name):
+        self.cur.execute(f"SELECT * FROM {table_name}")
         return pd.DataFrame(self.cur.fetchall())
 
     def standardise(self,df):
-        features = [
-            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
-            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
-            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
-            'total_damage', 'kda', 'kill_participation', 'cc_score',
-            'vision_score', 'turret_damage', 'objective_damage',
-            'total_roaming_distance', 'total_damage_taken'
-        ]
-
         for lane in df['lane'].unique():
+            features = self.features
             df_lane_subset = df[df['lane'] == lane].copy()
 
             scaler = StandardScaler()
@@ -198,7 +201,7 @@ class TimelineProcessor:
                 'objective_damage'
             ]
 
-            self.db_insert(df_lane_subset[db_columns])
+            self.insert_standardised(df_lane_subset[db_columns])
             print(f"inserted '{lane}'")
 
     def insert_standardised(self, insert_df):
@@ -208,7 +211,16 @@ class TimelineProcessor:
         self.conn.commit()
 
 
+    def visualise_collinearity(self):
+        features = self.features
+        standardised_features = self.fetch_table("player_standardised")[features]
+        correlation_matrix = standardised_features.corr()
+        plt.figure(figsize=(16, 12))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+        plt.show()
+    
+
+
 timelineProcessor = TimelineProcessor()
-
-
+timelineProcessor.visualise_collinearity()
 
