@@ -6,9 +6,11 @@ import numpy as np
 import os
 import psycopg2
 from psycopg2.extras import DictCursor, execute_values
+from scipy.spatial.distance import euclidean
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.cluster import FeatureAgglomeration
 
 from PythonScripts.creds import DBPASS
 
@@ -230,19 +232,27 @@ class TimelineProcessor:
             pca_results = pca.fit_transform(standardised_lane_subset[self.features])
 
             standardised_lane_subset[['x', 'y', 'z']] = pca_results
-            self.insert_pca(standardised_lane_subset[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']])
+            self.insert_reduced_features(standardised_lane_subset, "player_pca")
             print("Inserted " + lane)
 
+    def apply_fa(self):
+        standardised_df = self.fetch_table("player_standardised")
 
-    def insert_pca(self, insert_df):
-        query = "INSERT INTO player_pca (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT DO NOTHING"
+        for lane in standardised_df['lane'].unique():
+            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+            agglo = FeatureAgglomeration(n_clusters=3)
+            agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.features])
+            standardised_lane_subset[['x', 'y', 'z']] = agglomeration_results
+            self.insert_reduced_features(standardised_lane_subset, "player_fa")
+            print("Inserted " + lane)
+
+    def insert_reduced_features(self, insert_df, table):
+        insert_df = insert_df[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']]
+        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT DO NOTHING"
         tuples = [tuple(x) for x in insert_df.to_numpy()]
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-
-
-
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_pca()
+timelineProcessor.apply_fa()
 
