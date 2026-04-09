@@ -8,6 +8,7 @@ import psycopg2
 from psycopg2.extras import DictCursor, execute_values
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 from PythonScripts.creds import DBPASS
 
@@ -218,9 +219,30 @@ class TimelineProcessor:
         plt.figure(figsize=(16, 12))
         sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
         plt.show()
-    
+
+
+    def apply_pca(self):
+        standardised_df = self.fetch_table("player_standardised")
+
+        for lane in standardised_df['lane'].unique():
+            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+            pca = PCA(n_components=3, random_state=4)
+            pca_results = pca.fit_transform(standardised_lane_subset[self.features])
+
+            standardised_lane_subset[['x', 'y', 'z']] = pca_results
+            self.insert_pca(standardised_lane_subset[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']])
+            print("Inserted " + lane)
+
+
+    def insert_pca(self, insert_df):
+        query = "INSERT INTO player_pca (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT DO NOTHING"
+        tuples = [tuple(x) for x in insert_df.to_numpy()]
+        execute_values(self.cur, query, tuples)
+        self.conn.commit()
+
+
 
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.visualise_collinearity()
+timelineProcessor.apply_pca()
 
