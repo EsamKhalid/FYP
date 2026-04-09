@@ -242,6 +242,14 @@ class TimelineProcessor:
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             agglo = FeatureAgglomeration(n_clusters=3)
             agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.features])
+
+            # feature_groups = pd.DataFrame({
+            #     'feature': self.features,
+            #     'group': agglo.labels_
+            # }).sort_values('group')
+            # 
+            # print(feature_groups)
+
             standardised_lane_subset[['x', 'y', 'z']] = agglomeration_results
             self.insert_reduced_features(standardised_lane_subset, "player_fa")
             print("Inserted " + lane)
