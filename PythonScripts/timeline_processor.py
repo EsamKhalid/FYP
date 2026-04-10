@@ -8,9 +8,12 @@ import psycopg2
 from psycopg2.extras import DictCursor, execute_values
 from scipy.spatial.distance import euclidean
 
+import matplotlib.cm as cm
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.cluster import FeatureAgglomeration
+from sklearn.cluster import FeatureAgglomeration, KMeans
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 from PythonScripts.creds import DBPASS
 
@@ -268,6 +271,35 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
+    def calculate_optimal_k(self, table):
+        df = self.fetch_table(table)
+
+        range_num_k = range(2, 11)
+
+        for lane in df['lane'].unique():
+            if table == "player_pca" or table == "player_fa":
+                lane_subset = df[df['lane'] == lane][['x', 'y', 'z']]
+            else:
+                lane_subset = df[df['lane'] == lane][self.features]
+
+            silhouette_scores = []
+
+            for k in range_num_k:
+                km = KMeans(n_clusters=k, random_state=4, n_init=10)
+                labels = km.fit_predict(lane_subset)
+                score = silhouette_score(lane_subset, labels, sample_size=1000, random_state=4)
+                silhouette_scores.append(score)
+
+            plt.figure(figsize=(8, 4))
+            plt.plot(list(range_num_k), silhouette_scores, marker='o', color='steelblue')
+            plt.xlabel("Number of Clusters (k)")
+            plt.ylabel("Silhouette Score")
+            plt.title(f"{lane} Silhouette Score {table}")
+            plt.xticks(range(2, 11))
+            plt.tight_layout()
+            plt.savefig(f"../figures/{lane}_{table}.png", dpi=150)
+            plt.show()
+
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_fa()
+timelineProcessor.calculate_optimal_k("player_fa")
 
