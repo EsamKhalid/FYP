@@ -19,10 +19,6 @@ import math
 
 rootdir = "C:/Api_Data/combined/timeline_data/EUW"
 
-rawParticipants = pd.read_csv("../data/participants.csv")
-
-participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[["lane", "champion_name", "kills", "deaths", "assists", "vision_score", "team_id", "kill_participation", "turret_damage", "objective_damage"]].to_dict())
-
 count = 0
 
 class TimelineProcessor:
@@ -47,6 +43,16 @@ class TimelineProcessor:
         self.cur.close()
         self.conn.close()
 
+    def read_participants(self):
+        rawParticipants = pd.read_csv("../data/participants.csv")
+
+        participants = pd.DataFrame(rawParticipants.set_index(["puuid", "match_id"])[
+                                        ["lane", "champion_name", "kills", "deaths", "assists", "vision_score",
+                                         "team_id", "kill_participation", "turret_damage",
+                                         "objective_damage"]].to_dict())
+
+        return participants
+
     def insert_player_feature(self, player_feature):
         self.cur.execute(f"INSERT INTO player_features (puuid,match_id,lane,gold_7,gold_15,cs_7,cs_15,xp_7,xp_15,gpm,cspm,xpm,dpm)"
                          f"VALUES ('{player_feature["puuid"]}','{player_feature["match_id"]}','{player_feature["lane"]}','{player_feature["gold_7"]}','{player_feature["gold_15"]}','{player_feature["cs_7"]}','{player_feature["cs_15"]}','{player_feature["xp_7"]}','{player_feature["xp_15"]}','{player_feature["gpm"]}','{player_feature["cspm"]}','{player_feature["xpm"]}','{player_feature["dpm"]}')"
@@ -54,6 +60,7 @@ class TimelineProcessor:
         self.conn.commit()
 
     def process_timelines(self, count):
+        participants = self.read_participants()
         batch_buffer = []
         for subdir, dir, files in os.walk(rootdir):
             for file in files:
