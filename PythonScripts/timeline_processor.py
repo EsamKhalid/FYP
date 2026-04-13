@@ -13,8 +13,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import FeatureAgglomeration, KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
-
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+import umap
+
+
 
 from PythonScripts.creds import DBPASS
 
@@ -349,6 +352,20 @@ class TimelineProcessor:
             self.insert_reduced_features(standardised_lane_subset, "player_fa")
             print("Inserted " + lane)
 
+    def apply_umap(self, feature_state):
+        standardised_df = self.fetch_table("player_standardised")
+
+        for lane in standardised_df['lane'].unique():
+            if feature_state == "reduced":
+                features = self.reduced_features[lane]
+            else:
+                features = self.features
+            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+            umap_3d = umap.UMAP(n_components=3, random_state=4)
+            umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
+            standardised_lane_subset[['x', 'y', 'z']] = umap_results
+            self.insert_reduced_features(standardised_lane_subset, "player_umap")
+
     def insert_reduced_features(self, insert_df, table):
         insert_df = insert_df[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']]
         query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT (puuid, match_id) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z;"
@@ -356,13 +373,13 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-    def calculate_optimal_k(self, table, reduced_state):
+    def calculate_optimal_k(self, table, feature_state):
         df = self.fetch_table(table)
 
         range_num_k = range(2, 11)
 
         for lane in df['lane'].unique():
-            if table == "player_pca" or table == "player_fa":
+            if table == "player_pca" or table == "player_fa" or table == "player_umap":
                 lane_subset = df[df['lane'] == lane][['x', 'y', 'z']]
             else:
                 lane_subset = df[df['lane'] == lane][self.features]
@@ -382,9 +399,9 @@ class TimelineProcessor:
             plt.title(f"{lane} Silhouette Score {table}")
             plt.xticks(range(2, 11))
             plt.tight_layout()
-            plt.savefig(f"../figures/{lane}_{table}_{reduced_state}.png", dpi=150)
+            plt.savefig(f"../figures/{lane}_{table}_{feature_state}.png", dpi=150)
             plt.show()
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_fa()
-timelineProcessor.calculate_optimal_k("player_fa", "reduced")
+timelineProcessor.apply_umap("reduced")
+timelineProcessor.calculate_optimal_k("player_umap", "reduced")
