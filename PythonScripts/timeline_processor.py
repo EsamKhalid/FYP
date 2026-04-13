@@ -6,7 +6,6 @@ import numpy as np
 import os
 import psycopg2
 from psycopg2.extras import DictCursor, execute_values
-from scipy.spatial.distance import euclidean
 
 import matplotlib.cm as cm
 
@@ -15,14 +14,13 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import FeatureAgglomeration, KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
 from PythonScripts.creds import DBPASS
 
 import math
 
-
 rootdir = "C:/Api_Data/combined/timeline_data/EUW"
-
-count = 0
 
 class TimelineProcessor:
 
@@ -41,6 +39,49 @@ class TimelineProcessor:
             'vision_score', 'turret_damage', 'objective_damage',
             'total_roaming_distance', 'total_damage_taken'
         ]
+        self.reduced_features = {"TOP" : [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "JUNGLE" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "MIDDLE" :             [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "BOTTOM" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "UTILITY" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ]
+        }
+
+
 
     def close_connection(self):
         self.cur.close()
@@ -223,14 +264,50 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
+    def remove_collinear_features(self):
+        standardised_df = self.fetch_table("player_standardised")
 
-    def visualise_collinearity(self):
-        features = self.features
-        standardised_features = self.fetch_table("player_standardised")[features]
-        correlation_matrix = standardised_features.corr()
-        plt.figure(figsize=(16, 12))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
-        plt.show()
+        for lane in standardised_df['lane'].unique():
+            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane][self.features]
+            correlation_matrix = standardised_lane_subset.corr().abs()
+            plt.figure(figsize=(16, 12))
+            plt.title(f"Correlation Matrix {lane}")
+            sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+            plt.savefig(f"../figures/correlation_matrices/Correlation_Matrix_{lane}.png", dpi=150)
+            plt.show()
+            upper = correlation_matrix.where(np.triu(np.ones(correlation_matrix.shape), k=1).astype(bool))
+            to_drop = [column for column in upper.columns if any(upper[column] > 0.90)]
+            print(to_drop, lane)
+
+    def remove_high_vif_features(self):
+        threshold = 10
+        standardised_df = self.fetch_table("player_standardised")
+
+        for lane in standardised_df['lane'].unique():
+            reduced_lane_subset = standardised_df[self.reduced_features[lane]]
+            vif_data = pd.DataFrame()
+            vif_data["feature"] = reduced_lane_subset.columns
+
+            vif_data["VIF"] = [variance_inflation_factor(reduced_lane_subset.values, i)
+                               for i in range(len(reduced_lane_subset.columns))]
+
+            vif_data = vif_data.sort_values("VIF", ascending=True)
+
+            plt.figure(figsize=(10, 6))
+
+            colors = ['skyblue' if x < 10 else 'tomato' for x in vif_data['VIF']]
+
+            plt.barh(vif_data["feature"], vif_data["VIF"], color=colors)
+
+            plt.axvline(x=threshold, color='red', linestyle='--', label='Threshold (10)')
+
+            plt.title(f"VIF Scores - Lane: {lane}")
+            plt.xlabel("VIF Value")
+            plt.ylabel("Features")
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(f"../figures/VIF Plots/VIF_{lane}.png", dpi=150)
+            plt.show()
 
 
     def apply_pca(self):
@@ -301,5 +378,5 @@ class TimelineProcessor:
             plt.show()
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.calculate_optimal_k("player_fa")
+timelineProcessor.remove_high_vif_features()
 
