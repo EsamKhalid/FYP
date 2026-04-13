@@ -316,11 +316,19 @@ class TimelineProcessor:
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             pca = PCA(n_components=3, random_state=4)
-            pca_results = pca.fit_transform(standardised_lane_subset[self.features])
+            pca_results = pca.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
+
+            explained_variance = pca.explained_variance_ratio_
+            total_info = explained_variance.sum()
+
+            print(f"Lane: {lane}")
+            print(f"  x explains: {explained_variance[0]:.1%}")
+            print(f"  y explains: {explained_variance[1]:.1%}")
+            print(f"  z explains: {explained_variance[2]:.1%}")
+            print(f"  retained: {total_info:.1%}")
 
             standardised_lane_subset[['x', 'y', 'z']] = pca_results
             self.insert_reduced_features(standardised_lane_subset, "player_pca")
-            print("Inserted " + lane)
 
     def apply_fa(self):
         standardised_df = self.fetch_table("player_standardised")
@@ -328,14 +336,14 @@ class TimelineProcessor:
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             agglo = FeatureAgglomeration(n_clusters=3)
-            agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.features])
+            agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
 
-            # feature_groups = pd.DataFrame({
-            #     'feature': self.features,
-            #     'group': agglo.labels_
-            # }).sort_values('group')
-            # 
-            # print(feature_groups)
+            feature_groups = pd.DataFrame({
+                'feature': self.reduced_features[lane],
+                'group': agglo.labels_
+            }).sort_values('group')
+
+            print(feature_groups)
 
             standardised_lane_subset[['x', 'y', 'z']] = agglomeration_results
             self.insert_reduced_features(standardised_lane_subset, "player_fa")
@@ -343,12 +351,12 @@ class TimelineProcessor:
 
     def insert_reduced_features(self, insert_df, table):
         insert_df = insert_df[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']]
-        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT DO NOTHING"
+        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT (puuid, match_id) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z;"
         tuples = [tuple(x) for x in insert_df.to_numpy()]
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-    def calculate_optimal_k(self, table):
+    def calculate_optimal_k(self, table, reduced_state):
         df = self.fetch_table(table)
 
         range_num_k = range(2, 11)
@@ -374,9 +382,9 @@ class TimelineProcessor:
             plt.title(f"{lane} Silhouette Score {table}")
             plt.xticks(range(2, 11))
             plt.tight_layout()
-            plt.savefig(f"../figures/{lane}_{table}.png", dpi=150)
+            plt.savefig(f"../figures/{lane}_{table}_{reduced_state}.png", dpi=150)
             plt.show()
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.remove_high_vif_features()
-
+timelineProcessor.apply_fa()
+timelineProcessor.calculate_optimal_k("player_fa", "reduced")
