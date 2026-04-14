@@ -374,16 +374,53 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-    def apply_hdbscan(self, table):
+    def tune_hdbscan_params(self, table):
         umap_df = self.fetch_table(table)
 
-        total_relative_validity = 0
+        min_cluster_sizes = [10, 15, 25, 30, 40, 50, 75, 100, 150, 200]
+        min_samples = [1,5,10]
 
         for lane in umap_df['lane'].unique():
             lane_subset = umap_df[umap_df['lane'] == lane].copy()
             lane_coordinates = lane_subset[['x', 'y', 'z']]
 
-            clusterer = hdbscan.HDBSCAN(min_cluster_size=50, gen_min_span_tree=True)
+            best_validity = -1.0
+            best_size = None
+            best_clusters = None
+            best_sample = None
+
+            for size in min_cluster_sizes:
+                for min_sample in min_samples:
+                    clusterer = hdbscan.HDBSCAN(min_cluster_size=size, min_samples=min_sample ,gen_min_span_tree=True)
+                    clusters = clusterer.fit_predict(lane_coordinates)
+
+                    relative_validity = clusterer.relative_validity_
+
+                    if relative_validity > best_validity:
+                        best_validity = relative_validity
+                        best_clusters = clusters
+                        best_size = size
+                        best_sample = min_sample
+
+            print(f"Lane : {lane} | best size : {best_size} | best sample : {best_sample} | relative validity : {best_validity:.4f}")
+            print(f"Clusters: {best_clusters} | Noise: {list(best_clusters).count(-1)}")
+
+
+    def apply_hdbscan(self):
+        umap_df = self.fetch_table("player_umap_standard")
+        reduced_df = self.fetch_table("player_umap_reduced")
+
+        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 50, "BOTTOM" : 100, "UTILITY" : 10}
+        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 10, "BOTTOM" : 50, "UTILITY" : 10}
+
+        for lane in umap_df['lane'].unique():
+            if lane == "TOP":
+                lane_subset = reduced_df[reduced_df['lane'] == lane].copy()
+            else:
+                lane_subset = umap_df[umap_df['lane'] == lane].copy()
+            lane_coordinates = lane_subset[['x', 'y', 'z']]
+
+            clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True)
             clusters = clusterer.fit_predict(lane_coordinates)
             unique_clusters = np.unique(clusters)
             n_clusters = len(unique_clusters) - (1 if -1 in clusters else 0)
@@ -393,14 +430,11 @@ class TimelineProcessor:
             print(f"number of noise points: {n_noise} (out of {len(clusters)})")
             print(f"relative validity: {clusterer.relative_validity_}")
 
-            total_relative_validity += clusterer.relative_validity_
-
             lane_subset['cluster'] = clusters
 
-            self.insert_clusters(table, lane_subset)
+            self.insert_clusters("player_umap_standard", lane_subset)
             print(f"inserted {lane}")
 
-        print(f"average relative validity: {total_relative_validity / 5}")
 
     def insert_clusters(self, table, cluster_df):
         query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z, cluster) VALUES %s ON CONFLICT (match_id, puuid) DO UPDATE SET cluster = EXCLUDED.cluster"
@@ -441,4 +475,4 @@ class TimelineProcessor:
 
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_hdbscan("player_umap_reduced")
+timelineProcessor.apply_hdbscan()
