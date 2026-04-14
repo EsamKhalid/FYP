@@ -1,16 +1,18 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.UI;
-using Newtonsoft.Json;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class APIHandler : MonoBehaviour
 {
     [SerializeField] private TMP_InputField nameField;
     [SerializeField] private TMP_InputField tagField;
+    [SerializeField] private TMP_InputField laneField;
 
     public APIResponse data;
 
@@ -23,7 +25,9 @@ public class APIHandler : MonoBehaviour
     {
         string name = nameField.text;
         string tag = tagField.text;
-        StartCoroutine(GetPlayerData(name, tag));
+        string lane = laneField.text;
+        //StartCoroutine(GetPlayerData(name, tag));
+        StartCoroutine(GetPoints(lane));
     }
 
     IEnumerator GetPlayerData(string name, string tag)
@@ -46,24 +50,39 @@ public class APIHandler : MonoBehaviour
         }
     }
 
-    void handleResponse(APIResponse data)
+    IEnumerator GetPoints(string lane)
     {
+        string url = "http://127.0.0.1:8000/UMAPPoints/" + lane;
+        UnityWebRequest request = UnityWebRequest.Get(url);
 
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
+            SceneManager.LoadScene("Main");
+        }
+        else
+        {
+            Debug.LogError(request.error);
+        }
     }
 }
 
 [System.Serializable]
-public class MatchPoint
+public class UMAPPoint
 {
-    public float x;
-    public float y;
-    public float z;
+    public string puuid, match_id, lane;
     public bool win;
+    public float x, y, z;
+    public int cluster;
+    public string current_rank;
 }
 
 [System.Serializable]
 public class APIResponse
 {
-    public string puuid;
-    public MatchPoint[] points;
+    public UMAPPoint[] umapPoints;
 }
+
+

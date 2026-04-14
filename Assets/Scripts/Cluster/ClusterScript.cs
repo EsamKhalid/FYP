@@ -50,15 +50,15 @@ public class ClusterScript : MonoBehaviour
     //    }
     //}
 
-    void SpawnMatchPoints(MatchPoint match)
-    {
-        Vector3 position = new Vector3(match.x, match.y, match.z);
-        GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);
-        if (match.win)
-            obj.GetComponent<Renderer>().material.color = Color.green;
-        else
-            obj.GetComponent<Renderer>().material.color = Color.red;
-    }
+    //void SpawnMatchPoints( match)
+    //{
+    //    Vector3 position = new Vector3(match.x, match.y, match.z);
+    //    GameObject obj = Instantiate(spherePrefab, position, Quaternion.identity);
+    //    if (match.win)
+    //        obj.GetComponent<Renderer>().material.color = Color.green;
+    //    else
+    //        obj.GetComponent<Renderer>().material.color = Color.red;
+    //}
 }
 
 //[System.Serializable]

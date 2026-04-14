@@ -8,7 +8,18 @@ from creds import DBPASS
 import time
 
 import pandas as pd
+
+import psycopg2
+from psycopg2.extras import DictCursor
 app = FastAPI()
+
+conn = psycopg2.connect(database="features_db",
+                        user="postgres",
+                        host="localhost",
+                        password=DBPASS,
+                        port="5432")
+
+cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 def api_call(url: str, max_retries=3) -> json:
     for attempt in range(max_retries):
@@ -67,4 +78,16 @@ def get_player(name : str, tag : str):
     return {
         "puuid" : puuid,
         "points" : points,
+    }
+
+@app.get("/UMAPPoints/{lane}")
+
+def get_points(lane : str):
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}'")
+    points = cur.fetchall()
+
+    df = pd.DataFrame(points)
+
+    return {
+        "UMAPPoints" : points
     }

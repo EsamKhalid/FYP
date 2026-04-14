@@ -18,9 +18,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import umap
 import hdbscan
 
-
-
-from PythonScripts.creds import DBPASS
+from creds import DBPASS
 
 import math
 
@@ -100,6 +98,11 @@ class TimelineProcessor:
                                          "objective_damage"]].to_dict())
 
         return participants
+
+    def read_players(self):
+        players = pd.read_csv("../data/player_ranks.csv")
+        players = pd.DataFrame(players.set_index("puuid")["current_rank"].to_dict())
+        return players
 
     def insert_player_feature(self, player_feature):
         self.cur.execute(f"INSERT INTO player_features (puuid,match_id,lane,gold_7,gold_15,cs_7,cs_15,xp_7,xp_15,gpm,cspm,xpm,dpm)"
