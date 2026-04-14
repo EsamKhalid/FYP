@@ -11,11 +11,12 @@ import matplotlib.cm as cm
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.cluster import FeatureAgglomeration, KMeans
+from sklearn.cluster import FeatureAgglomeration, KMeans, HDBSCAN
 from sklearn.metrics import silhouette_samples, silhouette_score
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 import umap
+import hdbscan
 
 
 
@@ -352,11 +353,11 @@ class TimelineProcessor:
             self.insert_reduced_features(standardised_lane_subset, "player_fa")
             print("Inserted " + lane)
 
-    def apply_umap(self, feature_state):
+    def apply_umap(self, table):
         standardised_df = self.fetch_table("player_standardised")
 
         for lane in standardised_df['lane'].unique():
-            if feature_state == "reduced":
+            if table == "player_umap_reduced":
                 features = self.reduced_features[lane]
             else:
                 features = self.features
@@ -364,12 +365,46 @@ class TimelineProcessor:
             umap_3d = umap.UMAP(n_components=3, random_state=4)
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
-            self.insert_reduced_features(standardised_lane_subset, "player_umap")
+            self.insert_reduced_features(standardised_lane_subset, table)
 
     def insert_reduced_features(self, insert_df, table):
         insert_df = insert_df[['puuid', 'match_id', 'lane', 'win', 'x', 'y', 'z']]
         query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z) VALUES %s ON CONFLICT (puuid, match_id) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z;"
         tuples = [tuple(x) for x in insert_df.to_numpy()]
+        execute_values(self.cur, query, tuples)
+        self.conn.commit()
+
+    def apply_hdbscan(self, table):
+        umap_df = self.fetch_table(table)
+
+        total_relative_validity = 0
+
+        for lane in umap_df['lane'].unique():
+            lane_subset = umap_df[umap_df['lane'] == lane].copy()
+            lane_coordinates = lane_subset[['x', 'y', 'z']]
+
+            clusterer = hdbscan.HDBSCAN(min_cluster_size=50, gen_min_span_tree=True)
+            clusters = clusterer.fit_predict(lane_coordinates)
+            unique_clusters = np.unique(clusters)
+            n_clusters = len(unique_clusters) - (1 if -1 in clusters else 0)
+            n_noise = list(clusters).count(-1)
+
+            print(f"number of clusters: {n_clusters}")
+            print(f"number of noise points: {n_noise} (out of {len(clusters)})")
+            print(f"relative validity: {clusterer.relative_validity_}")
+
+            total_relative_validity += clusterer.relative_validity_
+
+            lane_subset['cluster'] = clusters
+
+            self.insert_clusters(table, lane_subset)
+            print(f"inserted {lane}")
+
+        print(f"average relative validity: {total_relative_validity / 5}")
+
+    def insert_clusters(self, table, cluster_df):
+        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z, cluster) VALUES %s ON CONFLICT (match_id, puuid) DO UPDATE SET cluster = EXCLUDED.cluster"
+        tuples = [tuple(x) for x in cluster_df.to_numpy()]
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
@@ -402,6 +437,8 @@ class TimelineProcessor:
             plt.savefig(f"../figures/{lane}_{table}_{feature_state}.png", dpi=150)
             plt.show()
 
+
+
+
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_umap("reduced")
-timelineProcessor.calculate_optimal_k("player_umap", "reduced")
+timelineProcessor.apply_hdbscan("player_umap_reduced")
