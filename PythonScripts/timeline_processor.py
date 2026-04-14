@@ -410,7 +410,7 @@ class TimelineProcessor:
         umap_df = self.fetch_table("player_umap_standard")
         reduced_df = self.fetch_table("player_umap_reduced")
 
-        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 50, "BOTTOM" : 100, "UTILITY" : 10}
+        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 50, "BOTTOM" : 250, "UTILITY" : 10}
         min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 10, "BOTTOM" : 50, "UTILITY" : 10}
 
         for lane in umap_df['lane'].unique():
