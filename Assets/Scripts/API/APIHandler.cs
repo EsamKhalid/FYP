@@ -11,9 +11,11 @@ using UnityEngine.UI;
 
 public class APIHandler : MonoBehaviour
 {
-    [SerializeField] private TMP_InputField nameField;
-    [SerializeField] private TMP_InputField tagField;
-    [SerializeField] private TMP_Dropdown laneDropdown;
+    private TMP_InputField nameField;
+    private TMP_InputField tagField;
+    private TMP_Dropdown laneDropdown;
+
+    private Button submitButton;
 
     private string[] laneList = {"TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY" };
     private int laneValue = 0;
@@ -22,23 +24,28 @@ public class APIHandler : MonoBehaviour
 
     private void Awake()
     {
+        laneDropdown = GameObject.Find("LaneDropdown").GetComponent<TMP_Dropdown>();
+        submitButton = GameObject.Find("SubmitButton").GetComponent<Button>();
+        submitButton.onClick.AddListener(OnSubmitButton);
+        Debug.Log(laneDropdown);
+
         DontDestroyOnLoad(this.gameObject);
-        data = null;
         laneValue = laneDropdown.value;
         laneDropdown.onValueChanged.AddListener(delegate { OnDropdownValueChanged(laneDropdown); });
     }
 
     public void OnSubmitButton()
     {
-        string name = nameField.text;
-        string tag = tagField.text;
-        //StartCoroutine(GetPlayerData(name, tag));
+        //string name = nameField.text;
+        //string tag = tagField.text;
         string lane = laneList[laneValue];
         StartCoroutine(GetPoints(lane));
     }
 
     private void OnDropdownValueChanged(TMP_Dropdown change)
     {
+
+        Debug.Log("test");
         laneValue = change.value;
     }
     IEnumerator GetPlayerData(string name, string tag)

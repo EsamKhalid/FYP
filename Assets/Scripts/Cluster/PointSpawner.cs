@@ -151,6 +151,7 @@ public class PointSpawner : MonoBehaviour
 
     public void BackToInput()
     {
+        GameObject.Destroy(handlerObject);
         SceneManager.LoadScene("InputScreen");
     }
 }
