@@ -1,0 +1,402 @@
+@import "@fortawesome/fontawesome-free/css/all.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: blender-pro-book;
+    src: url(/public/fonts/BlenderPro-Book.ttf);
+}
+
+@font-face {
+    font-family: Montserrat;
+    src: url(/public/fonts/Montserrat-Regular.ttf);
+}
+
+@font-face {
+    font-family: "gillsansmt";
+    src: url(/public/fonts/gillsansmt.ttf);
+}
+
+* {
+    @apply font-Montserrat;
+}
+
+:root {
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 214, 219, 220;
+    --background-end-rgb: 255, 255, 255;
+}
+
+
+body {
+    color: rgb(var(--foreground-rgb));
+    @apply bg-ghost-white text-raisin-black;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    @apply flex-1;
+}
+
+/*
+body {
+    color: rgb(var(--foreground-rgb));
+    @apply bg-ghost-white text-raisin-black h-screen;
+}
+
+main {
+    @apply h-full;
+} */
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
+
+@layer components {
+    /* my added code!! */
+    .navbar {
+        @apply flex justify-between items-center bg-amber text-white px-6 py-4;
+    }
+
+    .navbar img {
+        @apply h-12 w-auto mr-3; /* height of logo */
+    }
+
+    .navbar h1 {
+        @apply text-2xl font-bold; /* logo text styling */
+    }
+
+    .navbar ul {
+        @apply hidden md:flex space-x-8 text-lg; /* show links in a row on medium screens and larger */
+    }
+
+    .navbar ul li a {
+        @apply hover:text-gray-200 transition; /* hover effect */
+    }
+
+    .navbar .fas,
+    .navbar .far {
+        @apply fa-xl hover:text-gray-200 transition; /* icons hover effect and size */
+    }
+
+    /* the end of my added code */
+
+    /*
+    .navbar ul li {
+        transition-duration: 200ms;
+        @apply text-sm rounded mr-[25px] sm:mr-[20px] cursor-pointer hidden hover:bg-ghost-white hover:text-night
+    md:p-5 md:flex md:text-2xl  p-1;
+    }
+    */
+
+    .category {
+        transition-duration: 200ms;
+        @apply block bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform;
+    }
+    
+    /*
+    .categories ul li {
+        transition-duration: 200ms;
+        @apply text-xl rounded mx-[2px] h-[100px] cursor-pointer hover:bg-ghost-white hover:text-night p-1 bg-amber w-screen text-center hover:border-amber hover:border;
+    }
+    */
+
+    /* .navbar ul li {
+        @apply text-sm  cursor-pointer hover:bg-jms-blue
+    } */
+
+    .NavLogoContainer a {
+        @apply hover:bg-ghost-white m-[5px] hidden items-center justify-center 
+    cursor-pointer duration-200 rounded
+    size-[30px]
+    md:flex
+    md:size-[50px];
+    }
+
+    .NavLogoContainer a > * {
+        @apply size-[25px] sm:size-[35px];
+    }
+
+    .border-corners-lg {
+        --s: 50px; /* the size on the corner */
+        --t: 4px; /* the thickness of the border */
+        --g: 10px; /* the gap between the border and image */
+
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid white; /* the color here */
+        outline-offset: calc(-1 * var(--t));
+        mask: conic-gradient(at var(--s) var(--s), #0000 75%, #000 0) 0 0 /
+                calc(100% - var(--s)) calc(100% - var(--s)),
+            linear-gradient(#000 0 0) content-box;
+    }
+
+    .border-corners-sm {
+        --s: 9px; /* the size on the corner */
+        --t: 2px; /* the thickness of the border */
+        --g: 5px; /* the gap between the border and image */
+
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid white; /* the color here */
+        outline-offset: calc(-1 * var(--t));
+        mask: conic-gradient(at var(--s) var(--s), #0000 75%, #000 0) 0 0 /
+                calc(100% - var(--s)) calc(100% - var(--s)),
+            linear-gradient(#000 0 0) content-box;
+    }
+
+    .border-corners {
+        --s: 9px; /* the size on the corner */
+        --t: 2px; /* the thickness of the border */
+        --g: 0px; /* the gap between the border and image */
+
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid white; /* the color here */
+        outline-offset: calc(-1 * var(--t));
+        mask: conic-gradient(at var(--s) var(--s), #0000 75%, #000 0) 0 0 /
+                calc(100% - var(--s)) calc(100% - var(--s)),
+            linear-gradient(#000 0 0) content-box;
+    }
+
+    .border-corners-md {
+        --s: 15px; /* the size on the corner */
+        --t: 3px; /* the thickness of the border */
+        --g: 7.5px; /* the gap between the border and image */
+
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid black; /* the color here */
+        outline-offset: calc(-1 * var(--t));
+        mask: conic-gradient(at var(--s) var(--s), #0000 75%, #000 0) 0 0 /
+                calc(100% - var(--s)) calc(100% - var(--s)),
+            linear-gradient(#000 0 0) content-box;
+    }
+
+    .passTest {
+        width: var(--t);
+    }
+
+    .custom-diagonal-yellow {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            #fbbf24 25%,
+            #fbbf24 50%,
+            transparent 50%,
+            transparent 90%,
+            #fbbf24 75%
+        );
+        background-size: 40px 40px;
+    }
+
+    .custom-diagonal-white-right-animated {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 40px 40px;
+        @apply bg-black;
+    }
+
+    .custom-diagonal-white-right-static {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 40px 40px;
+        @apply bg-black w-full h-[25px];
+    }
+
+    .custom-diagonal-white-left {
+        background-image: linear-gradient(
+            45deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 40px 40px;
+    }
+
+    .cdw-right {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 40px 40px;
+        @apply bg-black w-full h-[25px];
+    }
+    .cdwa-right {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 25px 25px; /* changed the thickness of stripes */
+        @apply bg-amber w-full h-[13px]; /* changed the height of stripes */
+    }
+
+    .cdb-right {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            black 25%,
+            black 50%,
+            transparent 50%,
+            transparent 90%,
+            black 75%
+        );
+        background-size: 40px 40px;
+        @apply bg-[#fbbf24] w-full h-[25px]  border-black;
+    }
+
+    .gradient-test {
+        background-image: linear-gradient(
+            135deg,
+            transparent 25%,
+            transparent 40%,
+            white 25%,
+            white 50%,
+            transparent 50%,
+            transparent 90%,
+            white 75%
+        );
+        background-size: 50px 50px;
+    }
+
+    .inhe:hover #default {
+        @apply hidden;
+    }
+
+    .inhe:hover #hover {
+        @apply block;
+    }
+
+    .inhe:hover #hiddenIcon {
+        @apply visible;
+    }
+
+    .carouselBtn {
+        @apply block absolute top-0 bottom-0 -m-2  p-[1rem] transition duration-100 ease-in-out rounded;
+    }
+
+    .carouselBtn:hover {
+        @apply scale-[1.5] transition duration-200 ease-in-out;
+    }
+
+    .carouselBtn > * {
+        @apply w-[1.5rem] h-[1.5rem];
+    }
+
+    .logoTextCenter {
+        display: flex;
+        align-items: center;
+    }
+
+    #socials {
+        @media (min-width: 360px) {
+            display: none;
+        }
+    }
+
+    .projectFlex {
+        transition: 200ms ease-in-out;
+        @apply hover:flex-[6] hover:cursor-pointer;
+    }
+
+    #show {
+        @apply visible;
+    }
+    #main:hover + #show {
+        @apply h-[1000px];
+    }
+
+    #main:hover {
+        @apply bg-black;
+    }
+
+    .wrapper {
+        background-color: #e1e2e2;
+        height: 200px;
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+    }
+
+    .wrapper:before,
+    .wrapper:after {
+        content: "";
+        position: absolute;
+        height: 130px;
+        width: 150px;
+        z-index: 2;
+    }
+
+    .wrapper:after {
+        right: 0;
+        top: 0;
+        transform: rotateZ(180deg);
+    }
+
+    .wrapper:before {
+        left: 0;
+        top: 0;
+    }
+
+    .wrapper .track {
+        display: flex;
+        width: calc(150px * 10);
+        animation: scroll 15s 0.5s linear infinite;
+    }
+
+    .wrapper .logo {
+        width: 500px;
+    }
+
+    .wrapper .logo img {
+        @apply size-fit;
+    }
+
+    @keyframes scroll {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(calc(-150px * 5));
+        }
+    }
+}

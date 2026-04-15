@@ -365,7 +365,7 @@ class TimelineProcessor:
             else:
                 features = self.features
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
-            umap_3d = umap.UMAP(n_components=3, random_state=4)
+            umap_3d = umap.UMAP(n_components=3,n_neighbors=30, min_dist=0.0 ,random_state=4)
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
@@ -401,23 +401,23 @@ class TimelineProcessor:
 
                     if relative_validity > best_validity:
                         best_validity = relative_validity
-                        best_clusters = clusters
+                        best_clusters = len(np.unique(clusters)) - (1 if -1 in clusters else 0)
                         best_size = size
                         best_sample = min_sample
 
             print(f"Lane : {lane} | best size : {best_size} | best sample : {best_sample} | relative validity : {best_validity:.4f}")
-            print(f"Clusters: {best_clusters} | Noise: {list(best_clusters).count(-1)}")
+            print(f"Clusters: {best_clusters} | Noise: {list(clusters).count(-1)}")
 
 
     def apply_hdbscan(self):
         umap_df = self.fetch_table("player_umap_standard")
         reduced_df = self.fetch_table("player_umap_reduced")
 
-        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 50, "BOTTOM" : 250, "UTILITY" : 10}
-        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 10, "BOTTOM" : 50, "UTILITY" : 10}
+        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 75, "BOTTOM" : 40, "UTILITY" : 10}
+        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 5, "BOTTOM" : 1, "UTILITY" : 5}
 
         for lane in umap_df['lane'].unique():
-            if lane == "TOP":
+            if lane == "TOP" or lane == "MIDDLE":
                 lane_subset = reduced_df[reduced_df['lane'] == lane].copy()
             else:
                 lane_subset = umap_df[umap_df['lane'] == lane].copy()
@@ -440,7 +440,7 @@ class TimelineProcessor:
 
 
     def insert_clusters(self, table, cluster_df):
-        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z, cluster) VALUES %s ON CONFLICT (match_id, puuid) DO UPDATE SET cluster = EXCLUDED.cluster"
+        query = f"INSERT INTO {table} (puuid, match_id, lane, win, x, y, z, cluster, current_rank) VALUES %s ON CONFLICT (match_id, puuid) DO UPDATE SET cluster = EXCLUDED.cluster"
         tuples = [tuple(x) for x in cluster_df.to_numpy()]
         execute_values(self.cur, query, tuples)
         self.conn.commit()
@@ -478,4 +478,5 @@ class TimelineProcessor:
 
 
 timelineProcessor = TimelineProcessor()
+#timelineProcessor.tune_hdbscan_params("player_umap_reduced")
 timelineProcessor.apply_hdbscan()

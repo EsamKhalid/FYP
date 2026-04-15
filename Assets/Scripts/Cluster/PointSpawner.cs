@@ -18,7 +18,7 @@ public class PointSpawner : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI rankLabel;
 
-    private string[] ranks = { "ALL", "IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER" };
+    private string[] ranks = { "IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER" };
 
     private float currentSpacing = 1f;
 
@@ -34,7 +34,6 @@ public class PointSpawner : MonoBehaviour
         response = handler.data;
         umap_points = response.umapPoints;
 
-        //PlayerMatchPoint[] points = response.points;
         pointObjects = new GameObject[umap_points.Length];
         PlotPoints(umap_points);
         cameraScript.centerTransform = pointObjects[0].transform;
@@ -113,22 +112,21 @@ public class PointSpawner : MonoBehaviour
     public void FilterByRank(string targetRank)
     {
 
-        bool showAll = (targetRank.ToUpper() == "ALL");
+        //bool showAll = (targetRank.ToUpper() == "ALL");
 
         for (int i = 0; i < pointObjects.Length; i++)
         {
             if (pointObjects[i] != null)
             {
-
                 string rank = umap_points[i].current_rank;
 
-                bool shouldBeVisible = showAll || (rank.ToUpper() == targetRank.ToUpper());
+                //bool shouldBeVisible = showAll || (rank.ToUpper() == targetRank.ToUpper());
+                bool shouldBeVisible =  (rank.ToUpper() == targetRank.ToUpper());
 
                 pointObjects[i].SetActive(shouldBeVisible);
             }
         }
     }
-
 
     public void OnRankSliderChanged(float value)
     {
