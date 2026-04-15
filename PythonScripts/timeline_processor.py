@@ -18,6 +18,8 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import umap
 import hdbscan
 
+import joblib
+
 from creds import DBPASS
 
 import math
@@ -359,14 +361,17 @@ class TimelineProcessor:
     def apply_umap(self, table):
         standardised_df = self.fetch_table("player_standardised")
 
+        neighbours = {"TOP" : 10, "JUNGLE" : 15, "MIDDLE" : 15, "BOTTOM" : 30, "UTILITY" : 50}
+
         for lane in standardised_df['lane'].unique():
-            if table == "player_umap_reduced":
+            if lane == "TOP" or lane == "MIDDLE":
                 features = self.reduced_features[lane]
             else:
                 features = self.features
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
-            umap_3d = umap.UMAP(n_components=3,n_neighbors=30, min_dist=0.0 ,random_state=4)
+            umap_3d = umap.UMAP(n_components=3,n_neighbors=neighbours[lane], min_dist=0.0 ,random_state=4)
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
+            joblib.dump(umap_results, f"umap_standard_{lane}.sav")
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
@@ -377,7 +382,7 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-    def tune_hdbscan_params(self, table):
+    def tune_table_hdbscan_params(self, table):
         umap_df = self.fetch_table(table)
 
         min_cluster_sizes = [10, 15, 25, 30, 40, 50, 75, 100, 150, 200]
@@ -408,22 +413,52 @@ class TimelineProcessor:
             print(f"Lane : {lane} | best size : {best_size} | best sample : {best_sample} | relative validity : {best_validity:.4f}")
             print(f"Clusters: {best_clusters} | Noise: {list(clusters).count(-1)}")
 
+    def tune_df_hdbscan_params(self, df, lane):
+        min_cluster_sizes = [10, 15, 25, 30, 40, 50, 75, 100, 150, 200]
+        min_samples = [1, 5, 10]
+
+        lane_coordinates = df[['x', 'y', 'z']]
+
+        best_validity = -1.0
+        best_size = None
+        best_clusters = None
+        best_sample = None
+
+        for size in min_cluster_sizes:
+            for min_sample in min_samples:
+                clusterer = hdbscan.HDBSCAN(min_cluster_size=size, min_samples=min_sample, gen_min_span_tree=True)
+                clusters = clusterer.fit_predict(lane_coordinates)
+
+                relative_validity = clusterer.relative_validity_
+
+                if relative_validity > best_validity:
+                    best_validity = relative_validity
+                    best_clusters = len(np.unique(clusters)) - (1 if -1 in clusters else 0)
+                    best_size = size
+                    best_sample = min_sample
+        print(f"Lane : {lane} | best size : {best_size} | best sample : {best_sample} | relative validity : {best_validity:.4f}")
+        print(f"Clusters: {best_clusters} | Noise: {list(clusters).count(-1)}")
+
+
+
 
     def apply_hdbscan(self):
         umap_df = self.fetch_table("player_umap_standard")
-        reduced_df = self.fetch_table("player_umap_reduced")
+        #reduced_df = self.fetch_table("player_umap_reduced")
 
-        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 75, "BOTTOM" : 40, "UTILITY" : 10}
-        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 5, "BOTTOM" : 1, "UTILITY" : 5}
+        cluster_sizes = {"TOP" : 5, "JUNGLE" : 10, "MIDDLE" : 100, "BOTTOM" : 40, "UTILITY" : 75}
+        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 5, "BOTTOM" : 1, "UTILITY" : 10}
 
         for lane in umap_df['lane'].unique():
-            if lane == "TOP" or lane == "MIDDLE":
-                lane_subset = reduced_df[reduced_df['lane'] == lane].copy()
-            else:
-                lane_subset = umap_df[umap_df['lane'] == lane].copy()
+            # if lane == "TOP" or lane == "MIDDLE":
+            #     lane_subset = reduced_df[reduced_df['lane'] == lane].copy()
+            # else:
+            #     lane_subset = umap_df[umap_df['lane'] == lane].copy()
+            lane_subset = umap_df[umap_df['lane'] == lane].copy()
             lane_coordinates = lane_subset[['x', 'y', 'z']]
 
-            clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True)
+            clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True, prediction_data=True)
+            joblib.dump(clusterer, f"hdbscan_standard_{lane}.sav")
             clusters = clusterer.fit_predict(lane_coordinates)
             unique_clusters = np.unique(clusters)
             n_clusters = len(unique_clusters) - (1 if -1 in clusters else 0)
@@ -474,9 +509,28 @@ class TimelineProcessor:
             plt.savefig(f"../figures/{lane}_{table}_{feature_state}.png", dpi=150)
             plt.show()
 
+    def tune_umap(self):
+        standardised_df = self.fetch_table("player_standardised")
+        neighbours = [10, 15, 20, 30, 50]
+
+        lanes = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+
+        for neighbour in neighbours:
+            for lane in lanes:
+                print(lane, neighbour)
+                if lane == "TOP" or lane == "MIDDLE":
+                    features = self.reduced_features[lane]
+                else:
+                    features = self.features
+                standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+                umap_3d = umap.UMAP(n_components=3, n_neighbors=neighbour, min_dist=0.0, random_state=4)
+                umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
+                standardised_lane_subset[['x', 'y', 'z']] = umap_results
+                self.tune_df_hdbscan_params(standardised_lane_subset, lane)
+
 
 
 
 timelineProcessor = TimelineProcessor()
-#timelineProcessor.tune_hdbscan_params("player_umap_reduced")
+#timelineProcessor.apply_umap("player_umap_standard")
 timelineProcessor.apply_hdbscan()

@@ -37,6 +37,7 @@ public class PointSpawner : MonoBehaviour
         pointObjects = new GameObject[umap_points.Length];
         PlotPoints(umap_points);
         cameraScript.centerTransform = pointObjects[0].transform;
+        FilterByRank("IRON");
     }
 
     void PlotPoints(UMAPPoint[] points)
@@ -50,7 +51,7 @@ public class PointSpawner : MonoBehaviour
             switch (points[i].cluster)
             {
                 case -1:
-                    pointColour = Color.black;  
+                    pointColour = Color.white;  
                     break;
                 case 0:
                     pointColour = Color.red;
@@ -61,8 +62,14 @@ public class PointSpawner : MonoBehaviour
                 case 2:
                     pointColour = Color.green;
                     break;
+                case 3:
+                    pointColour = Color.orange;
+                    break;
+                case 4:
+                    pointColour = Color.turquoise;
+                    break;
                 default:
-                    pointColour = Color.white;
+                    pointColour = Color.pink;
                     break;
             }
             cubeRenderer.material.color = pointColour;

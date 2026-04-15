@@ -83,7 +83,7 @@ def get_player(name : str, tag : str):
 @app.get("/UMAPPoints/{lane}")
 
 def get_points(lane : str):
-    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}'")
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1")
     points = cur.fetchall()
 
     df = pd.DataFrame(points)

@@ -23,6 +23,7 @@ public class APIHandler : MonoBehaviour
     private void Awake()
     {
         DontDestroyOnLoad(this.gameObject);
+        data = null;
         laneValue = laneDropdown.value;
         laneDropdown.onValueChanged.AddListener(delegate { OnDropdownValueChanged(laneDropdown); });
     }
