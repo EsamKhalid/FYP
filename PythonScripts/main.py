@@ -13,6 +13,8 @@ import psycopg2
 from psycopg2.extras import DictCursor, execute_values
 
 import math
+
+import joblib
 app = FastAPI()
 
 conn = psycopg2.connect(database="features_db",
@@ -23,12 +25,61 @@ conn = psycopg2.connect(database="features_db",
 
 cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
+standard_features = ['gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
+            'total_damage', 'kda', 'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken']
+
+feature_list = {"TOP" : [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "JUNGLE" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
+            'total_damage', 'kda', 'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "MIDDLE" :             [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15','kda',
+            'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "BOTTOM" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
+            'total_damage', 'kda', 'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ],
+        "UTILITY" :            [
+            'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
+            'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
+            'roaming_15', 'total_gold', 'total_cs', 'total_xp',
+            'total_damage', 'kda', 'kill_participation', 'cc_score',
+            'vision_score', 'turret_damage', 'objective_damage',
+            'total_roaming_distance', 'total_damage_taken'
+        ]
+        }
+
 def api_call(url: str, max_retries=3) -> json:
     for attempt in range(max_retries):
         try:
             response = requests.get(url, headers={"X-Riot-Token" : API_KEY}, timeout=10)
             if response.status_code == 200:
-                time.sleep(0.5)
+                time.sleep(1.0)
                 return response.json()
             elif response.status_code == 429:
                 retry_after = int(response.headers.get('Retry-After'), 60)
@@ -44,6 +95,14 @@ def api_call(url: str, max_retries=3) -> json:
             print(f"Request failed: {e}")
             time.sleep(2 ** attempt)
     return None
+
+def load_models(lane):
+    scaler = joblib.load(f"../Models/scaler_{lane}.sav")
+    umap_model = joblib.load(f"../Models/umap_standard_{lane}.sav")
+    hdbscan_model = joblib.load(f"../Models/hdbscan_standard_{lane}.sav")
+
+    return scaler, umap_model, hdbscan_model
+
 
 def get_puuid(name : str, tag : str) -> str:
     response = api_call(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}")
@@ -62,8 +121,8 @@ def get_timeline_data(match_id):
     return response
 
 def get_player_rank(puuid):
-    response = api_call(f"https://europe.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
-    return response["tier"]
+    response = api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
+    return response[0]["tier"]
 
 def process_player(name, tag):
     print(f"Processing player: {name} #{tag}")
@@ -76,6 +135,17 @@ def process_matches(match_list, puuid):
         print(f"Processing: {match_id}")
         process_match(match_id, puuid)
         break
+
+def insert_features(data):
+    query = """INSERT INTO player_features (puuid, match_id, lane,rank, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
+                VALUES %s 
+                ON CONFLICT DO NOTHING """
+    execute_values(cur, query, data)
+    conn.commit()
+
+def get_features(puuid, match_id):
+    cur.execute(f"SELECT * FROM player_features WHERE puuid='{puuid}' AND match_id='{match_id}'")
+    return pd.DataFrame(cur.fetchall())
 
 def process_match(match_id, puuid):
     raw_match_data = get_match_data(match_id)
@@ -96,7 +166,6 @@ def process_match(match_id, puuid):
     player_data = participants[pos]
     challenges = player_data["challenges"]
 
-    assists = player_data["assists"]
     dpm = round(challenges["damagePerMinute"])
     gpm = round(challenges["goldPerMinute"])
     kda = challenges["kda"]
@@ -157,11 +226,11 @@ def process_match(match_id, puuid):
         total_cs,
         total_xp,
         total_damage,
-        last_frame["damageStats"]["totalDamageTaken"],
-        round(total_gold / match_length),
+        total_damage_taken,
+        gpm,
         round(total_cs / match_length),
         round(total_xp / match_length),
-        round(total_damage / match_length),
+        dpm,
         kda,
         kp,
         cc_score,
@@ -172,17 +241,23 @@ def process_match(match_id, puuid):
         win
     ))
 
-    print(features)
+    insert_features(features)
+
+    scaler, umap_model, hdbscan_model = load_models(lane)
+
+    feature_df = get_features(puuid, match_id)
+
+    standardised = scaler.transform(feature_df[standard_features])
+
+    print(standardised)
+
+
+
 
 process_player("SpilltTea", "TEA")
 
 
-def insert_features(selast_frame, data):
-    query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
-                VALUES %s 
-                ON CONFLICT DO NOTHING """
-    execute_values(selast_frame.cur, query, data)
-    selast_frame.conn.commit()
+
 
 @app.get("/clusterManager/{name}/{tag}")
 

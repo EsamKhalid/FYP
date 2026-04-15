@@ -245,7 +245,10 @@ class TimelineProcessor:
         self.cur.execute(f"SELECT * FROM {table_name}")
         return pd.DataFrame(self.cur.fetchall())
 
-    def standardise(self,df):
+    def standardise(self):
+
+        df = self.fetch_table("player_features")
+
         for lane in df['lane'].unique():
             features = self.features
             df_lane_subset = df[df['lane'] == lane].copy()
@@ -263,7 +266,7 @@ class TimelineProcessor:
                 'kill_participation', 'cc_score', 'vision_score', 'turret_damage',
                 'objective_damage'
             ]
-
+            joblib.dump(scaler  , f"scaler_{lane}")
             self.insert_standardised(df_lane_subset[db_columns])
             print(f"inserted '{lane}'")
 
@@ -533,4 +536,5 @@ class TimelineProcessor:
 
 timelineProcessor = TimelineProcessor()
 #timelineProcessor.apply_umap("player_umap_standard")
-timelineProcessor.apply_hdbscan()
+# timelineProcessor.apply_hdbscan()
+timelineProcessor.standardise()
