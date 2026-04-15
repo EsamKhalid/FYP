@@ -10,7 +10,9 @@ import time
 import pandas as pd
 
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import DictCursor, execute_values
+
+import math
 app = FastAPI()
 
 conn = psycopg2.connect(database="features_db",
@@ -48,24 +50,139 @@ def get_puuid(name : str, tag : str) -> str:
     return response["puuid"]
 
 def get_matches(puuid : str):
-    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=10")
+    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue=420&type=ranked&start=0&count=45")
     return response
 
-def process_matches(match_list : [str], puuid : str):
-    points = []
-    for matchID in match_list:
-        matchDataRaw = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/{matchID}")
-        for participant in matchDataRaw["info"]["participants"]:
-            if participant["puuid"] != puuid:
-                continue
-            else:
-                kills = participant["kills"]
-                deaths = participant["deaths"]
-                assists = participant["assists"]
-                win = participant["win"]
-                points.append({"x": kills, "y": deaths, "z": assists, "win": win})
-                break
-    return points
+def get_match_data(match_id):
+    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}")
+    return response
+
+def get_timeline_data(match_id):
+    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline")
+    return response
+
+def get_player_rank(puuid):
+    response = api_call(f"https://europe.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
+    return response["tier"]
+
+def process_player(name, tag):
+    print(f"Processing player: {name} #{tag}")
+    puuid = get_puuid(name, tag)
+    match_list = get_matches(puuid)
+    process_matches(match_list, puuid)
+
+def process_matches(match_list, puuid):
+    for match_id in match_list:
+        print(f"Processing: {match_id}")
+        process_match(match_id, puuid)
+        break
+
+def process_match(match_id, puuid):
+    raw_match_data = get_match_data(match_id)
+    match_data = raw_match_data["info"]
+    timeline_data = get_timeline_data(match_id)
+    rank = get_player_rank(puuid)
+    features = []
+
+    participants_list = raw_match_data["metadata"]["participants"]
+    pos = participants_list.index(puuid)
+
+
+
+    if match_data["queueId"] != 420:
+        return
+
+    participants = raw_match_data["info"]["participants"]
+    player_data = participants[pos]
+    challenges = player_data["challenges"]
+
+    assists = player_data["assists"]
+    dpm = round(challenges["damagePerMinute"])
+    gpm = round(challenges["goldPerMinute"])
+    kda = challenges["kda"]
+    kp = round(challenges["killParticipation"], 2)
+    objective_damage = player_data["damageDealtToObjectives"]
+    turret_damage = player_data["damageDealtToTurrets"]
+    total_gold = player_data["goldEarned"]
+    lane = player_data["individualPosition"]
+    total_damage = player_data["totalDamageDealtToChampions"]
+    total_damage_taken = player_data["totalDamageTaken"]
+    vision_score = player_data["visionScore"]
+    win = player_data["win"]
+
+    timeline_participants = timeline_data["metadata"]["participants"]
+    timeline_pos = timeline_participants.index(puuid)
+
+    frames = timeline_data["info"]["frames"]
+
+    player_frames = []
+
+    for frame in frames:
+        player_frames.append(frame["participantFrames"][str(timeline_pos)])
+
+    match_length = len(player_frames)
+    frame7 = player_frames[6]
+    frame15 = player_frames[14]
+    last_frame = player_frames[-1]
+
+    total_cs = last_frame["minionsKilled"] + last_frame["jungleMinionsKilled"]
+    total_xp = last_frame["xp"]
+    cc_score = last_frame["timeEnemySpentControlled"]
+
+    pre_15_roaming = 0
+    total_roaming = 0
+
+    for i in range(0, match_length - 1):
+        current_position = player_frames[i]["position"]
+        next_position = player_frames[i + 1]["position"]
+        delta_x = (next_position["x"] - current_position["x"]) ** 2
+        delta_y = (next_position["y"] - current_position["y"]) ** 2
+        delta_pos = math.sqrt(delta_x + delta_y)
+        if i < 14:
+            pre_15_roaming += delta_pos
+        total_roaming += delta_pos
+
+    features.append((
+        puuid,
+        match_id,
+        lane,
+        rank,
+        frame7["totalGold"], frame15["totalGold"],
+        frame7["minionsKilled"] + frame7["jungleMinionsKilled"],
+        frame15["minionsKilled"] + frame15["jungleMinionsKilled"],
+        frame7["xp"], frame15["xp"],
+        frame7["damageStats"]["totalDamageDoneToChampions"], frame15["damageStats"]["totalDamageDoneToChampions"],
+        round(pre_15_roaming),
+        total_gold,
+        total_cs,
+        total_xp,
+        total_damage,
+        last_frame["damageStats"]["totalDamageTaken"],
+        round(total_gold / match_length),
+        round(total_cs / match_length),
+        round(total_xp / match_length),
+        round(total_damage / match_length),
+        kda,
+        kp,
+        cc_score,
+        vision_score,
+        turret_damage,
+        objective_damage,
+        round(total_roaming),
+        win
+    ))
+
+    print(features)
+
+process_player("SpilltTea", "TEA")
+
+
+def insert_features(selast_frame, data):
+    query = """INSERT INTO player_features (puuid, match_id, lane, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
+                VALUES %s 
+                ON CONFLICT DO NOTHING """
+    execute_values(selast_frame.cur, query, data)
+    selast_frame.conn.commit()
 
 @app.get("/clusterManager/{name}/{tag}")
 
