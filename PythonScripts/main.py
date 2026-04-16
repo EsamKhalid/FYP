@@ -81,7 +81,7 @@ def api_call(url: str, max_retries=3) -> json:
         try:
             response = requests.get(url, headers={"X-Riot-Token" : API_KEY}, timeout=10)
             if response.status_code == 200:
-                time.sleep(1.0)
+                time.sleep(0.5)
                 return response.json()
             elif response.status_code == 429:
                 retry_after = int(response.headers.get('Retry-After'), 60)
@@ -111,7 +111,7 @@ def get_puuid(name : str, tag : str) -> str:
     return response["puuid"]
 
 def get_matches(puuid : str):
-    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue=420&type=ranked&start=0&count=45")
+    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue=420&type=ranked&start=0&count=5")
     return response
 
 def get_match_data(match_id):
@@ -126,23 +126,38 @@ def get_player_rank(puuid):
     response = api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
     return response[0]["tier"]
 
+def get_player_data(puuid):
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE puuid = '{puuid}'")
+    return cur.fetchall()
+
 def process_player(name, tag):
     print(f"Processing player: {name} #{tag}")
+    ret = []
     puuid = get_puuid(name, tag)
+    player_data = get_player_data(puuid)
+    if player_data != None:
+        return player_data
     match_list = get_matches(puuid)
-    process_matches(match_list, puuid)
+    for match_id in match_list:
+        ret.append(process_match(match_id, puuid))
+    return ret
 
 def process_matches(match_list, puuid):
     for match_id in match_list:
         print(f"Processing: {match_id}")
-        process_match(match_id, puuid)
-        break
+        return process_match(match_id, puuid)
 
 def insert_features(data):
     query = """INSERT INTO player_features (puuid, match_id, lane,rank, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
                 VALUES %s 
                 ON CONFLICT DO NOTHING """
     execute_values(cur, query, data)
+    conn.commit()
+
+def insert_coord_cluster(data):
+    query = f"INSERT INTO player_umap_standard (puuid, match_id, lane, win, x, y, z, cluster, current_rank) VALUES %s ON CONFLICT (match_id, puuid) DO UPDATE SET cluster = EXCLUDED.cluster"
+    tuples = [tuple(x) for x in data.to_numpy()]
+    execute_values(cur, query, tuples)
     conn.commit()
 
 def get_features(puuid, match_id):
@@ -158,8 +173,6 @@ def process_match(match_id, puuid):
 
     participants_list = raw_match_data["metadata"]["participants"]
     pos = participants_list.index(puuid)
-
-
 
     if match_data["queueId"] != 420:
         return
@@ -253,16 +266,39 @@ def process_match(match_id, puuid):
 
     reduced = umap_model.transform(standardised)
 
-    label, probability = hdbscan.approximate_predict(hdbscan_model, reduced)
+    cluster, probability = hdbscan.approximate_predict(hdbscan_model, reduced)
 
-process_player("SpilltTea", "TEA")
+    reduced = reduced.flatten().tolist()
+
+    df_list = []
+
+    df_list.append((
+        puuid,
+        match_id,
+        lane,
+        win,
+        reduced[0],
+        reduced[1],
+        reduced[2],
+        cluster[0],
+        rank
+    ))
+
+    df = pd.DataFrame(df_list)
+
+    insert_coord_cluster(df)
+
+print(process_player("SpilltTea", "TEA"))
 
 @app.get("/getPlayer/{name}/{tag}")
 
 def get_player(name, tag):
-    pass
 
+    coord_list = process_player(name, tag)
 
+    return {
+        "coord_list" : coord_list
+    }
 
 # @app.get("/clusterManager/{name}/{tag}")
 #

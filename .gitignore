@@ -260,3 +260,4 @@ fabric.properties
 # idea folder, uncomment if you don't need it
 # .idea
 PythonScripts/creds.py
+Models/umap_standard_UTILITY.sav
