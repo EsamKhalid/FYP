@@ -23,11 +23,12 @@ public class PointSpawner : MonoBehaviour
 
     private string[] ranks = { "IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER" };
 
-    private float currentSpacing = 1f;
+    private float currentSpacing = 6f;
+    private float currentAlpha = 1f;
 
     private CameraScript cameraScript;
     private int currentPoint = 0;
-
+        
     void Awake()
     {
         cameraScript = cameraObject.GetComponent<CameraScript>();
@@ -47,6 +48,7 @@ public class PointSpawner : MonoBehaviour
 
     void PlotPoints(UMAPPoint[] points)
     {
+        int noiseCounter = 0;
         for (int i = 0; i < points.Length; i++)
         {
             Vector3 position = new Vector3(points[i].x, points[i].y, points[i].z) * currentSpacing;
@@ -56,7 +58,8 @@ public class PointSpawner : MonoBehaviour
             switch (points[i].cluster)
             {
                 case -1:
-                    pointColour = Color.white;  
+                    pointColour = Color.white;
+                    noiseCounter++;
                     break;
                 case 0:
                     pointColour = Color.red;
@@ -77,10 +80,7 @@ public class PointSpawner : MonoBehaviour
                     pointColour = Color.pink;
                     break;
             }
-            //cubeRenderer.material.color = pointColour;
-            Color transparrent = Color.clear;
-            transparrent.a = 0.3f;
-            cubeRenderer.material.color = transparrent;
+            cubeRenderer.material.color = pointColour;
         }
     }
 
@@ -115,6 +115,20 @@ public class PointSpawner : MonoBehaviour
                 Vector3 newPos = new Vector3(playerPoints[i].x, playerPoints[i].y, playerPoints[i].z) * currentSpacing;
                 playerPointObjects[i].transform.position = newPos;
             }
+        }
+    }
+
+    public void UpdateAlpha(float newAlpha)
+    {
+        currentAlpha = newAlpha;
+        Debug.Log(newAlpha);
+
+        for (int i = 0; i < pointObjects.Length; i++)
+        {
+            Renderer cubeRenderer = pointObjects[i].GetComponent<Renderer>();
+            Color cubeColour = cubeRenderer.material.color;
+            cubeColour.a = newAlpha;
+            cubeRenderer.material.color = cubeColour;
         }
     }
 

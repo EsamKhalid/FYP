@@ -109,10 +109,11 @@ def load_models(lane):
 
 def get_puuid(name : str, tag : str) -> str:
     response = api_call(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}")
+    print(response["puuid"])
     return response["puuid"]
 
 def get_matches(puuid : str):
-    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue=420&type=ranked&start=0&count=5")
+    response = api_call(f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue=420&type=ranked&start=0&count=100")
     return response
 
 def get_match_data(match_id):
@@ -137,11 +138,16 @@ def process_player(name, tag, lane):
     player_data = get_player_data(puuid, lane)
     if player_data:
         return puuid
+    match_count = 0
     match_list = get_matches(puuid)
     for match_id in match_list:
+        if match_count >= 20:
+            return puuid
         print(f"processing: {match_id}")
-        process_match(match_id, puuid)
+        if process_match(match_id, puuid):
+            match_count += 1
     return puuid
+
 
 def insert_features(data):
     query = """INSERT INTO player_features (puuid, match_id, lane,rank, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
@@ -171,16 +177,27 @@ def process_match(match_id, puuid):
     pos = participants_list.index(puuid)
 
     if match_data["queueId"] != 420:
-        return
+        return False
+
+    if match_data["gameDuration"] < 900:
+        return False
 
     participants = raw_match_data["info"]["participants"]
+
+    team_kills = {}
+
+    for participant in participants:
+        team_id = participant["teamId"]
+        team_kills[team_id] = team_kills.get(team_id, 0) + participant["kills"]
+
     player_data = participants[pos]
     challenges = player_data["challenges"]
 
     dpm = round(challenges["damagePerMinute"])
     gpm = round(challenges["goldPerMinute"])
     kda = challenges["kda"]
-    kp = round(challenges["killParticipation"], 2)
+
+    kp = round(player_data["kills"] / max(team_kills[player_data["teamId"]], 1),2)
     objective_damage = player_data["damageDealtToObjectives"]
     turret_damage = player_data["damageDealtToTurrets"]
     total_gold = player_data["goldEarned"]
@@ -282,7 +299,9 @@ def process_match(match_id, puuid):
 
     df = pd.DataFrame(df_list)
 
-    insert_coord_cluster(df)
+    insert_coord_cluster(df)#
+
+    return True
 
 #print(process_player("SpilltTea", "TEA", "MIDDLE"))
 
@@ -292,7 +311,7 @@ def get_player(name, tag, lane):
 
     puuid = process_player(name, tag, lane)
     player_points = get_player_data(puuid, lane)
-    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != 1 AND puuid != '{puuid}'")
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
     points = cur.fetchall()
 
     return {
