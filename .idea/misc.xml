@@ -4,4 +4,6 @@
     <option name="sdkName" value="Python 3.12 (FYP)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (FYP)" project-jdk-type="Python SDK" />
+    <option name="sdkName" value="Python 3.12 (API_Miner)" />
+  </component>
 </project>
