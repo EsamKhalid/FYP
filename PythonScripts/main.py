@@ -15,6 +15,8 @@ from psycopg2.extras import DictCursor, execute_values
 import math
 
 import joblib
+
+import hdbscan
 app = FastAPI()
 
 conn = psycopg2.connect(database="features_db",
@@ -249,28 +251,31 @@ def process_match(match_id, puuid):
 
     standardised = scaler.transform(feature_df[standard_features])
 
-    print(standardised)
+    reduced = umap_model.transform(standardised)
 
-
-
+    label, probability = hdbscan.approximate_predict(hdbscan_model, reduced)
 
 process_player("SpilltTea", "TEA")
 
+@app.get("/getPlayer/{name}/{tag}")
+
+def get_player(name, tag):
+    pass
 
 
 
-@app.get("/clusterManager/{name}/{tag}")
-
-def get_player(name : str, tag : str):
-
-    puuid = get_puuid(name, tag)
-    matchList = get_matches(puuid)
-    points = process_matches(matchList, puuid)
-
-    return {
-        "puuid" : puuid,
-        "points" : points,
-    }
+# @app.get("/clusterManager/{name}/{tag}")
+#
+# def get_player(name : str, tag : str):
+#
+#     puuid = get_puuid(name, tag)
+#     matchList = get_matches(puuid)
+#     points = process_matches(matchList, puuid)
+#
+#     return {
+#         "puuid" : puuid,
+#         "points" : points,
+#     }
 
 @app.get("/UMAPPoints/{lane}")
 

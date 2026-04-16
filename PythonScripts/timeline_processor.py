@@ -373,8 +373,9 @@ class TimelineProcessor:
                 features = self.features
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             umap_3d = umap.UMAP(n_components=3,n_neighbors=neighbours[lane], min_dist=0.0 ,random_state=4)
+            reduced = umap_3d.fit(standardised_lane_subset[features])
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
-            joblib.dump(umap_results, f"umap_standard_{lane}.sav")
+            joblib.dump(reduced, f"umap_standard_{lane}.sav")
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
@@ -460,7 +461,7 @@ class TimelineProcessor:
             lane_subset = umap_df[umap_df['lane'] == lane].copy()
             lane_coordinates = lane_subset[['x', 'y', 'z']]
 
-            clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True, prediction_data=True)
+            clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True, prediction_data=True).fit(lane_coordinates)
             joblib.dump(clusterer, f"hdbscan_standard_{lane}.sav")
             clusters = clusterer.fit_predict(lane_coordinates)
             unique_clusters = np.unique(clusters)
@@ -536,5 +537,5 @@ class TimelineProcessor:
 
 timelineProcessor = TimelineProcessor()
 #timelineProcessor.apply_umap("player_umap_standard")
-# timelineProcessor.apply_hdbscan()
-timelineProcessor.standardise()
+timelineProcessor.apply_hdbscan()
+#timelineProcessor.apply_umap("player_umap_standard")
