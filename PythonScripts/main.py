@@ -144,7 +144,7 @@ def process_player(name, tag, lane):
         if match_count >= 20:
             return puuid
         print(f"processing: {match_id}")
-        if process_match(match_id, puuid):
+        if process_match(match_id, puuid, lane):
             match_count += 1
     return puuid
 
@@ -166,9 +166,18 @@ def get_features(puuid, match_id):
     cur.execute(f"SELECT * FROM player_features WHERE puuid='{puuid}' AND match_id='{match_id}'")
     return pd.DataFrame(cur.fetchall())
 
-def process_match(match_id, puuid):
+def process_match(match_id, puuid, lane):
     raw_match_data = get_match_data(match_id)
     match_data = raw_match_data["info"]
+    if match_data["queueId"] != 420:
+        return False
+
+    if match_data["gameDuration"] < 900:
+        return False
+
+
+
+
     timeline_data = get_timeline_data(match_id)
     rank = get_player_rank(puuid)
     features = []
@@ -176,11 +185,6 @@ def process_match(match_id, puuid):
     participants_list = raw_match_data["metadata"]["participants"]
     pos = participants_list.index(puuid)
 
-    if match_data["queueId"] != 420:
-        return False
-
-    if match_data["gameDuration"] < 900:
-        return False
 
     participants = raw_match_data["info"]["participants"]
 
@@ -191,6 +195,11 @@ def process_match(match_id, puuid):
         team_kills[team_id] = team_kills.get(team_id, 0) + participant["kills"]
 
     player_data = participants[pos]
+    player_lane = player_data["individualPosition"]
+
+    if player_lane != lane:
+        return False
+
     challenges = player_data["challenges"]
 
     dpm = round(challenges["damagePerMinute"])
@@ -201,7 +210,6 @@ def process_match(match_id, puuid):
     objective_damage = player_data["damageDealtToObjectives"]
     turret_damage = player_data["damageDealtToTurrets"]
     total_gold = player_data["goldEarned"]
-    lane = player_data["individualPosition"]
     total_damage = player_data["totalDamageDealtToChampions"]
     total_damage_taken = player_data["totalDamageTaken"]
     vision_score = player_data["visionScore"]
@@ -242,7 +250,7 @@ def process_match(match_id, puuid):
     features.append((
         puuid,
         match_id,
-        lane,
+        player_lane,
         rank,
         frame7["totalGold"], frame15["totalGold"],
         frame7["minionsKilled"] + frame7["jungleMinionsKilled"],
