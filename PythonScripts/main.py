@@ -1,5 +1,6 @@
 import json
 from http.client import responses
+from tkinter.ttk import Label
 
 from fastapi import FastAPI
 import requests
@@ -126,21 +127,20 @@ def get_player_rank(puuid):
     response = api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
     return response[0]["tier"]
 
-def get_player_data(puuid):
-    cur.execute(f"SELECT * FROM player_umap_standard WHERE puuid = '{puuid}'")
+def get_player_data(puuid, lane):
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE puuid = '{puuid}' and lane = '{lane}'")
     return cur.fetchall()
 
-def process_player(name, tag):
+def process_player(name, tag, lane):
     print(f"Processing player: {name} #{tag}")
-    ret = []
     puuid = get_puuid(name, tag)
-    player_data = get_player_data(puuid)
+    player_data = get_player_data(puuid, lane)
     if player_data != None:
-        return player_data
+        return puuid
     match_list = get_matches(puuid)
     for match_id in match_list:
-        ret.append(process_match(match_id, puuid))
-    return ret
+        process_match(match_id, puuid)
+    return puuid
 
 def process_matches(match_list, puuid):
     for match_id in match_list:
@@ -288,16 +288,20 @@ def process_match(match_id, puuid):
 
     insert_coord_cluster(df)
 
-print(process_player("SpilltTea", "TEA"))
+#print(process_player("SpilltTea", "TEA", "MIDDLE"))
 
-@app.get("/getPlayer/{name}/{tag}")
+@app.get("/getPlayer/{name}/{tag}/{lane}")
 
-def get_player(name, tag):
+def get_player(name, tag, lane):
 
-    coord_list = process_player(name, tag)
+    puuid = process_player(name, tag, lane)
+    player_points = get_player_data(puuid, lane)
+    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != 1 AND puuid != '{puuid}'")
+    points = cur.fetchall()
 
     return {
-        "coord_list" : coord_list
+        "playerPoints" : player_points,
+        "points" : points
     }
 
 # @app.get("/clusterManager/{name}/{tag}")

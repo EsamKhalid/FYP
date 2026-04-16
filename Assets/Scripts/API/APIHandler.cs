@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -24,6 +25,8 @@ public class APIHandler : MonoBehaviour
 
     private void Awake()
     {
+        nameField = GameObject.Find("nameInput").GetComponent<TMP_InputField>();
+        tagField = GameObject.Find("tagInput").GetComponent<TMP_InputField>();
         laneDropdown = GameObject.Find("LaneDropdown").GetComponent<TMP_Dropdown>();
         submitButton = GameObject.Find("SubmitButton").GetComponent<Button>();
         submitButton.onClick.AddListener(OnSubmitButton);
@@ -36,10 +39,10 @@ public class APIHandler : MonoBehaviour
 
     public void OnSubmitButton()
     {
-        //string name = nameField.text;
-        //string tag = tagField.text;
+        string name = nameField.text;
+        string tag = tagField.text;
         string lane = laneList[laneValue];
-        StartCoroutine(GetPoints(lane));
+        StartCoroutine(GetPoints(lane, name, tag));
     }
 
     private void OnDropdownValueChanged(TMP_Dropdown change)
@@ -68,10 +71,10 @@ public class APIHandler : MonoBehaviour
         }
     }
 
-    IEnumerator GetPoints(string lane)
+    IEnumerator GetPoints(string lane, string name, string tag) 
     {
         Debug.Log(lane);
-        string url = "http://127.0.0.1:8000/UMAPPoints/" + lane;
+        string url = "http://127.0.0.1:8000/getPlayer/" + name + "/" + tag + "/" + lane;
         UnityWebRequest request = UnityWebRequest.Get(url);
 
         yield return request.SendWebRequest();
@@ -101,7 +104,8 @@ public class UMAPPoint
 [System.Serializable]
 public class APIResponse
 {
-    public UMAPPoint[] umapPoints;
+    public UMAPPoint[] playerPoints;
+    public UMAPPoint[] points;
 }
 
 

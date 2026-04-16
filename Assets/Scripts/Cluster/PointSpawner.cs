@@ -11,7 +11,9 @@ public class PointSpawner : MonoBehaviour
     private APIResponse response;
 
     private GameObject[] pointObjects;
+    private GameObject[] playerPointObjects;
     private UMAPPoint[] umap_points;
+    private UMAPPoint[] playerPoints;
 
     [SerializeField] private GameObject cubePrefab;
     [SerializeField] GameObject cameraObject;
@@ -32,10 +34,13 @@ public class PointSpawner : MonoBehaviour
         handlerObject = GameObject.Find("API");
         handler = handlerObject.GetComponent<APIHandler>();
         response = handler.data;
-        umap_points = response.umapPoints;
+        umap_points = response.points;
+        playerPoints = response.playerPoints;
 
         pointObjects = new GameObject[umap_points.Length];
+        playerPointObjects = new GameObject[playerPoints.Length];
         PlotPoints(umap_points);
+        plotPlayerPoints(playerPoints);
         cameraScript.centerTransform = pointObjects[0].transform;
         FilterByRank("IRON");
     }
@@ -72,7 +77,19 @@ public class PointSpawner : MonoBehaviour
                     pointColour = Color.pink;
                     break;
             }
-            cubeRenderer.material.color = pointColour;
+            //cubeRenderer.material.color = pointColour;
+            cubeRenderer.material.color = Color.clear;
+        }
+    }
+
+    void plotPlayerPoints(UMAPPoint[] playerPoints)
+    {
+        for (int i = 0; i < playerPoints.Length; i++)
+        {
+            Vector3 position = new Vector3(playerPoints[i].x, playerPoints[i].y, playerPoints[i].z) * currentSpacing;
+            pointObjects[i] = Instantiate(cubePrefab, position, Quaternion.identity);
+            Renderer cubeRenderer = pointObjects[i].GetComponent<Renderer>();
+            cubeRenderer.material.color = Color.white;
         }
     }
 

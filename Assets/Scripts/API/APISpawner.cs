@@ -14,9 +14,4 @@ public class APISpawner : MonoBehaviour
         }
 
     }
-
-    void Update()
-    {
-        
-    }
 }
