@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering.UI;
 using UnityEngine.SceneManagement;
+using static UnityEngine.GraphicsBuffer;
 
 public class PointSpawner : MonoBehaviour
 {
@@ -36,7 +37,6 @@ public class PointSpawner : MonoBehaviour
         response = handler.data;
         umap_points = response.points;
         playerPoints = response.playerPoints;
-
         pointObjects = new GameObject[umap_points.Length];
         playerPointObjects = new GameObject[playerPoints.Length];
         PlotPoints(umap_points);
@@ -78,7 +78,9 @@ public class PointSpawner : MonoBehaviour
                     break;
             }
             //cubeRenderer.material.color = pointColour;
-            cubeRenderer.material.color = Color.clear;
+            Color transparrent = Color.clear;
+            transparrent.a = 0.3f;
+            cubeRenderer.material.color = transparrent;
         }
     }
 
@@ -87,8 +89,8 @@ public class PointSpawner : MonoBehaviour
         for (int i = 0; i < playerPoints.Length; i++)
         {
             Vector3 position = new Vector3(playerPoints[i].x, playerPoints[i].y, playerPoints[i].z) * currentSpacing;
-            pointObjects[i] = Instantiate(cubePrefab, position, Quaternion.identity);
-            Renderer cubeRenderer = pointObjects[i].GetComponent<Renderer>();
+            playerPointObjects[i] = Instantiate(cubePrefab, position, Quaternion.identity);
+            Renderer cubeRenderer = playerPointObjects[i].GetComponent<Renderer>();
             cubeRenderer.material.color = Color.white;
         }
     }
@@ -103,6 +105,15 @@ public class PointSpawner : MonoBehaviour
             {
                 Vector3 newPos = new Vector3(umap_points[i].x, umap_points[i].y, umap_points[i].z) * currentSpacing;
                 pointObjects[i].transform.position = newPos;
+            }
+        }
+
+        for (int i = 0; i < playerPointObjects.Length; i++)
+        {
+            if (playerPointObjects[i] != null)
+            {
+                Vector3 newPos = new Vector3(playerPoints[i].x, playerPoints[i].y, playerPoints[i].z) * currentSpacing;
+                playerPointObjects[i].transform.position = newPos;
             }
         }
     }
@@ -135,19 +146,27 @@ public class PointSpawner : MonoBehaviour
 
     public void FilterByRank(string targetRank)
     {
-
-        //bool showAll = (targetRank.ToUpper() == "ALL");
-
         for (int i = 0; i < pointObjects.Length; i++)
         {
             if (pointObjects[i] != null)
             {
                 string rank = umap_points[i].current_rank;
+                
 
                 //bool shouldBeVisible = showAll || (rank.ToUpper() == targetRank.ToUpper());
                 bool shouldBeVisible =  (rank.ToUpper() == targetRank.ToUpper());
+                
 
                 pointObjects[i].SetActive(shouldBeVisible);
+            }
+        }
+
+        for (int i = 0; i < playerPointObjects.Length; i++)
+        {
+            if (playerPointObjects[i] != null)
+            {
+                bool shouldBeVisible = playerPoints[i].current_rank.ToUpper() == targetRank;
+                playerPointObjects[i].SetActive(shouldBeVisible);
             }
         }
     }

@@ -255,7 +255,6 @@ class TimelineProcessor:
 
             scaler = StandardScaler()
             scaled_data = scaler.fit_transform(df_lane_subset[features])
-
             df_lane_subset[features] = scaled_data
 
             db_columns = [
@@ -266,7 +265,7 @@ class TimelineProcessor:
                 'kill_participation', 'cc_score', 'vision_score', 'turret_damage',
                 'objective_damage'
             ]
-            joblib.dump(scaler  , f"scaler_{lane}")
+            joblib.dump(scaler  , f"scaler_{lane}.sav")
             self.insert_standardised(df_lane_subset[db_columns])
             print(f"inserted '{lane}'")
 
@@ -373,9 +372,8 @@ class TimelineProcessor:
                 features = self.features
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             umap_3d = umap.UMAP(n_components=3,n_neighbors=neighbours[lane], min_dist=0.0 ,random_state=4)
-            reduced = umap_3d.fit(standardised_lane_subset[features])
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
-            joblib.dump(reduced, f"umap_standard_{lane}.sav")
+            joblib.dump(umap_3d, f"umap_standard_{lane}.sav")
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
@@ -537,5 +535,7 @@ class TimelineProcessor:
 
 timelineProcessor = TimelineProcessor()
 #timelineProcessor.apply_umap("player_umap_standard")
+timelineProcessor.standardise()
+timelineProcessor.apply_umap("player_umap_standard")
 timelineProcessor.apply_hdbscan()
 #timelineProcessor.apply_umap("player_umap_standard")

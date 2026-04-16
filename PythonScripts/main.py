@@ -82,7 +82,7 @@ def api_call(url: str, max_retries=3) -> json:
         try:
             response = requests.get(url, headers={"X-Riot-Token" : API_KEY}, timeout=10)
             if response.status_code == 200:
-                time.sleep(0.5)
+                time.sleep(0.2)
                 return response.json()
             elif response.status_code == 429:
                 retry_after = int(response.headers.get('Retry-After'), 60)
@@ -135,17 +135,13 @@ def process_player(name, tag, lane):
     print(f"Processing player: {name} #{tag}")
     puuid = get_puuid(name, tag)
     player_data = get_player_data(puuid, lane)
-    if player_data != None:
+    if player_data:
         return puuid
     match_list = get_matches(puuid)
     for match_id in match_list:
+        print(f"processing: {match_id}")
         process_match(match_id, puuid)
     return puuid
-
-def process_matches(match_list, puuid):
-    for match_id in match_list:
-        print(f"Processing: {match_id}")
-        return process_match(match_id, puuid)
 
 def insert_features(data):
     query = """INSERT INTO player_features (puuid, match_id, lane,rank, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, total_gold, total_cs, total_xp, total_damage, total_damage_taken, gpm, cspm, xpm, dpm, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage, total_roaming_distance, win) 
@@ -195,7 +191,7 @@ def process_match(match_id, puuid):
     win = player_data["win"]
 
     timeline_participants = timeline_data["metadata"]["participants"]
-    timeline_pos = timeline_participants.index(puuid)
+    timeline_pos = timeline_participants.index(puuid) + 1
 
     frames = timeline_data["info"]["frames"]
 

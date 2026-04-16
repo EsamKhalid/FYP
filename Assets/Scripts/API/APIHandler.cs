@@ -74,7 +74,8 @@ public class APIHandler : MonoBehaviour
     IEnumerator GetPoints(string lane, string name, string tag) 
     {
         Debug.Log(lane);
-        string url = "http://127.0.0.1:8000/getPlayer/" + name + "/" + tag + "/" + lane;
+        //string url = "http://127.0.0.1:8000/getPlayer/" + name + "/" + tag + "/" + lane;
+        string url = "http://127.0.0.1:8000/getPlayer/SpilltTea/TEA/MIDDLE";
         UnityWebRequest request = UnityWebRequest.Get(url);
 
         yield return request.SendWebRequest();
