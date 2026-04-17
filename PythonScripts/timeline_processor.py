@@ -482,13 +482,13 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
-    def calculate_optimal_k(self, table, feature_state):
+    def calculate_optimal_k(self, table):
         df = self.fetch_table(table)
 
         range_num_k = range(2, 11)
 
         for lane in df['lane'].unique():
-            if table == "player_pca" or table == "player_fa" or table == "player_umap":
+            if table == "player_pca" or table == "player_fa" or table == "player_umap_standard" or table == "player_umap_reduced":
                 lane_subset = df[df['lane'] == lane][['x', 'y', 'z']]
             else:
                 lane_subset = df[df['lane'] == lane][self.features]
@@ -508,7 +508,7 @@ class TimelineProcessor:
             plt.title(f"{lane} Silhouette Score {table}")
             plt.xticks(range(2, 11))
             plt.tight_layout()
-            plt.savefig(f"../figures/{lane}_{table}_{feature_state}.png", dpi=150)
+            plt.savefig(f"../figures/{lane}_{table}.png", dpi=150)
             plt.show()
 
     def tune_umap(self):
@@ -534,8 +534,4 @@ class TimelineProcessor:
 
 
 timelineProcessor = TimelineProcessor()
-#timelineProcessor.apply_umap("player_umap_standard")
-timelineProcessor.standardise()
-timelineProcessor.apply_umap("player_umap_standard")
-timelineProcessor.apply_hdbscan()
-#timelineProcessor.apply_umap("player_umap_standard")
+timelineProcessor.calculate_optimal_k("player_umap_reduced")
