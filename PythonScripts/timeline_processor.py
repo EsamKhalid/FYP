@@ -35,6 +35,14 @@ class TimelineProcessor:
                                      password=DBPASS,
                                      port="5432")
         self.cur = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        self.db_columns = [
+                'puuid', 'match_id', 'lane', 'win', 'gold_7', 'gold_15', 'cs_7', 'cs_15',
+                'xp_7', 'xp_15', 'damage_7', 'damage_15', 'roaming_15', 'gpm', 'cspm',
+                'xpm', 'dpm', 'total_gold', 'total_cs', 'total_xp', 'total_damage',
+                'total_damage_taken', 'total_roaming_distance', 'kda',
+                'kill_participation', 'cc_score', 'vision_score', 'turret_damage',
+                'objective_damage'
+            ]
         self.features = [
             'gold_7', 'gold_15', 'cs_7', 'cs_15', 'xp_7', 'xp_15',
             'gpm', 'cspm', 'xpm', 'dpm', 'damage_7', 'damage_15',
@@ -245,73 +253,71 @@ class TimelineProcessor:
         self.cur.execute(f"SELECT * FROM {table_name}")
         return pd.DataFrame(self.cur.fetchall())
 
+    # Standardises the player_features table
     def standardise(self):
-
+        # Returns dataframe containing all extracted features for each player-match pair
         df = self.fetch_table("player_features")
-
+        # Loops through each lane and creates a copy of the lane subset
         for lane in df['lane'].unique():
             features = self.features
             df_lane_subset = df[df['lane'] == lane].copy()
-
+            # Create scaler using sklearn StandardScaler
             scaler = StandardScaler()
+            # Transform subset data using scaler
             scaled_data = scaler.fit_transform(df_lane_subset[features])
             df_lane_subset[features] = scaled_data
-
-            db_columns = [
-                'puuid', 'match_id', 'lane', 'win', 'gold_7', 'gold_15', 'cs_7', 'cs_15',
-                'xp_7', 'xp_15', 'damage_7', 'damage_15', 'roaming_15', 'gpm', 'cspm',
-                'xpm', 'dpm', 'total_gold', 'total_cs', 'total_xp', 'total_damage',
-                'total_damage_taken', 'total_roaming_distance', 'kda',
-                'kill_participation', 'cc_score', 'vision_score', 'turret_damage',
-                'objective_damage'
-            ]
+            # Stores scaler for use in online component
             joblib.dump(scaler  , f"scaler_{lane}.sav")
-            self.insert_standardised(df_lane_subset[db_columns])
+            # Reorders columns to match table and inserts into database
+            df_lane_subset= df_lane_subset.loc[: , self.db_columns]
+            self.insert_standardised(df_lane_subset)
             print(f"inserted '{lane}'")
 
     def insert_standardised(self, insert_df):
         query = "INSERT INTO player_standardised (puuid, match_id, lane, win, gold_7, gold_15, cs_7, cs_15, xp_7, xp_15, damage_7, damage_15, roaming_15, gpm, cspm, xpm, dpm, total_gold, total_cs, total_xp, total_damage,total_damage_taken, total_roaming_distance, kda, kill_participation, cc_score, vision_score, turret_damage, objective_damage) VALUES %s ON CONFLICT DO NOTHING"
         tuples = [tuple(x) for x in insert_df.to_numpy()]
         execute_values(self.cur, query, tuples)
-        self.conn.commit()
+        #self.conn.commit()
 
+    # Remove highly correlated feature and plot correlation matrix
     def remove_collinear_features(self):
+        # Fetches standardised feature table
         standardised_df = self.fetch_table("player_standardised")
-
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane][self.features]
+            # Generates correlation matrix
             correlation_matrix = standardised_lane_subset.corr().abs()
+            # Plots correlation matrix
             plt.figure(figsize=(16, 12))
             plt.title(f"Correlation Matrix {lane}")
             sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
             plt.savefig(f"../figures/correlation_matrices/Correlation_Matrix_{lane}.png", dpi=150)
             plt.show()
+            # Selects upper triangle
             upper = correlation_matrix.where(np.triu(np.ones(correlation_matrix.shape), k=1).astype(bool))
+            # Creates list of columns to drop if r > 0.90
             to_drop = [column for column in upper.columns if any(upper[column] > 0.90)]
             print(to_drop, lane)
 
+    # Calculate VIF for each feature
     def remove_high_vif_features(self):
+        # Define threshold and fetch standardised table
         threshold = 10
         standardised_df = self.fetch_table("player_standardised")
-
         for lane in standardised_df['lane'].unique():
+            # Creates subset using reduced feature set from collinear feature removal
             reduced_lane_subset = standardised_df[self.reduced_features[lane]]
+            # Creates empty dataframe and populates with features and VIF scores
             vif_data = pd.DataFrame()
             vif_data["feature"] = reduced_lane_subset.columns
-
             vif_data["VIF"] = [variance_inflation_factor(reduced_lane_subset.values, i)
                                for i in range(len(reduced_lane_subset.columns))]
-
+            # Plots VIF data as bar chart with threshold line and colouring
             vif_data = vif_data.sort_values("VIF", ascending=True)
-
             plt.figure(figsize=(10, 6))
-
             colors = ['skyblue' if x < 10 else 'tomato' for x in vif_data['VIF']]
-
             plt.barh(vif_data["feature"], vif_data["VIF"], color=colors)
-
             plt.axvline(x=threshold, color='red', linestyle='--', label='Threshold (10)')
-
             plt.title(f"VIF Scores - Lane: {lane}")
             plt.xlabel("VIF Value")
             plt.ylabel("Features")
@@ -441,9 +447,6 @@ class TimelineProcessor:
         print(f"Lane : {lane} | best size : {best_size} | best sample : {best_sample} | relative validity : {best_validity:.4f}")
         print(f"Clusters: {best_clusters} | Noise: {list(clusters).count(-1)}")
 
-
-
-
     def apply_hdbscan(self):
         umap_df = self.fetch_table("player_umap_standard")
         #reduced_df = self.fetch_table("player_umap_reduced")
@@ -530,8 +533,6 @@ class TimelineProcessor:
                 standardised_lane_subset[['x', 'y', 'z']] = umap_results
                 self.tune_df_hdbscan_params(standardised_lane_subset, lane)
 
-
-
-
 timelineProcessor = TimelineProcessor()
-timelineProcessor.calculate_optimal_k("player_umap_reduced")
+timelineProcessor.calculate_optimal_k("player_features")
+# timelineProcessor.tune_table_hdbscan_params("player_fa")

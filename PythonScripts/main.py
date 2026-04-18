@@ -175,9 +175,6 @@ def process_match(match_id, puuid, lane):
     if match_data["gameDuration"] < 900:
         return False
 
-
-
-
     timeline_data = get_timeline_data(match_id)
     rank = get_player_rank(puuid)
     features = []
@@ -321,6 +318,8 @@ def get_player(name, tag, lane):
     player_points = get_player_data(puuid, lane)
     cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
     points = cur.fetchall()
+
+    # Add a boolean to determine if the fetch was successful or not
 
     return {
         "playerPoints" : player_points,
