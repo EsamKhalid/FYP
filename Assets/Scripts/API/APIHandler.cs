@@ -83,7 +83,15 @@ public class APIHandler : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
-            SceneManager.LoadScene("Main");
+            if (data.success == true)
+            {
+                SceneManager.LoadScene("Main");
+            }
+            else
+            {
+                Debug.LogError(data.error);
+            }
+            
         }
         else
         {
@@ -107,6 +115,8 @@ public class APIResponse
 {
     public UMAPPoint[] playerPoints;
     public UMAPPoint[] points;
+    public bool success;
+    public string error;
 }
 
 

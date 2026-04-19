@@ -126,7 +126,17 @@ def get_timeline_data(match_id):
 
 def get_player_rank(puuid):
     response = api_call(f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
-    return response[0]["tier"]
+
+    if not response:
+        return
+
+    if len(response) > 1:
+        if response[0]["queueType"] == "RANKED_SOLO_5x5":
+            return response[0]["tier"]
+        else:
+            return response[1]["tier"]
+    else:
+        return response[0]["tier"]
 
 def get_player_data(puuid, lane):
     cur.execute(f"SELECT * FROM player_umap_standard WHERE puuid = '{puuid}' and lane = '{lane}'")
@@ -135,18 +145,21 @@ def get_player_data(puuid, lane):
 def process_player(name, tag, lane):
     print(f"Processing player: {name} #{tag}")
     puuid = get_puuid(name, tag)
+    rank = get_player_rank(puuid)
+    if not rank:
+        return False, "Not currently ranked", puuid
     player_data = get_player_data(puuid, lane)
     if player_data:
-        return puuid
+        return True, "None", puuid
     match_count = 0
     match_list = get_matches(puuid)
     for match_id in match_list:
         if match_count >= 20:
-            return puuid
+            return True, "None", puuid
         print(f"processing: {match_id}")
-        if process_match(match_id, puuid, lane):
+        if process_match(match_id, puuid, lane, rank):
             match_count += 1
-    return puuid
+    return True, "None", puuid
 
 
 def insert_features(data):
@@ -166,7 +179,7 @@ def get_features(puuid, match_id):
     cur.execute(f"SELECT * FROM player_features WHERE puuid='{puuid}' AND match_id='{match_id}'")
     return pd.DataFrame(cur.fetchall())
 
-def process_match(match_id, puuid, lane):
+def process_match(match_id, puuid, lane, rank):
     raw_match_data = get_match_data(match_id)
     match_data = raw_match_data["info"]
     if match_data["queueId"] != 420:
@@ -176,7 +189,6 @@ def process_match(match_id, puuid, lane):
         return False
 
     timeline_data = get_timeline_data(match_id)
-    rank = get_player_rank(puuid)
     features = []
 
     participants_list = raw_match_data["metadata"]["participants"]
@@ -314,16 +326,24 @@ def process_match(match_id, puuid, lane):
 
 def get_player(name, tag, lane):
 
-    puuid = process_player(name, tag, lane)
-    player_points = get_player_data(puuid, lane)
-    cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
-    points = cur.fetchall()
+    player_points = None
+    points = None
+
+    success, error, puuid = process_player(name, tag, lane)
+    if success:
+        player_points = get_player_data(puuid, lane)
+        cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
+        points = cur.fetchall()
+
+
 
     # Add a boolean to determine if the fetch was successful or not
 
     return {
         "playerPoints" : player_points,
-        "points" : points
+        "points" : points,
+        "success" : success,
+        "error" : error
     }
 
 # @app.get("/clusterManager/{name}/{tag}")
