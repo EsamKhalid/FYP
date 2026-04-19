@@ -327,13 +327,17 @@ class TimelineProcessor:
             plt.show()
 
 
-    def apply_pca(self):
+    def apply_pca(self, table):
         standardised_df = self.fetch_table("player_standardised")
 
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             pca = PCA(n_components=3, random_state=4)
-            pca_results = pca.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
+
+            if table == "pca_reduced":
+                pca_results = pca.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
+            else:
+                pca_results = pca.fit_transform(standardised_lane_subset[self.features])
 
             explained_variance = pca.explained_variance_ratio_
             total_info = explained_variance.sum()
@@ -345,25 +349,29 @@ class TimelineProcessor:
             print(f"  retained: {total_info:.1%}")
 
             standardised_lane_subset[['x', 'y', 'z']] = pca_results
-            self.insert_reduced_features(standardised_lane_subset, "player_pca")
+            self.insert_reduced_features(standardised_lane_subset, table)
 
-    def apply_fa(self):
+    def apply_fa(self, table):
         standardised_df = self.fetch_table("player_standardised")
 
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             agglo = FeatureAgglomeration(n_clusters=3)
-            agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
 
-            feature_groups = pd.DataFrame({
-                'feature': self.reduced_features[lane],
-                'group': agglo.labels_
-            }).sort_values('group')
-
-            print(feature_groups)
+            if table == "fa_reduced":
+                agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
+            else:
+                agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.features])
+            #
+            # feature_groups = pd.DataFrame({
+            #     'feature': self.reduced_features[lane],
+            #     'group': agglo.labels_
+            # }).sort_values('group')
+            #
+            # print(feature_groups)
 
             standardised_lane_subset[['x', 'y', 'z']] = agglomeration_results
-            self.insert_reduced_features(standardised_lane_subset, "player_fa")
+            self.insert_reduced_features(standardised_lane_subset, table)
             print("Inserted " + lane)
 
     def apply_umap(self, table):
@@ -372,14 +380,21 @@ class TimelineProcessor:
         neighbours = {"TOP" : 10, "JUNGLE" : 15, "MIDDLE" : 15, "BOTTOM" : 30, "UTILITY" : 50}
 
         for lane in standardised_df['lane'].unique():
-            if lane == "TOP" or lane == "MIDDLE":
+
+            if table == "player_umap_standard":
+                features = self.features
+            elif table == "player_umap_reduced":
                 features = self.reduced_features[lane]
             else:
-                features = self.features
+                if lane == "TOP":
+                    features = self.reduced_features[lane]
+                else:
+                    features = self.features
+
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
             umap_3d = umap.UMAP(n_components=3,n_neighbors=neighbours[lane], min_dist=0.0 ,random_state=4)
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
-            joblib.dump(umap_3d, f"umap_standard_{lane}.sav")
+            joblib.dump(umap_3d, f"{table}_{lane}.sav")
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
@@ -448,22 +463,17 @@ class TimelineProcessor:
         print(f"Clusters: {best_clusters} | Noise: {list(clusters).count(-1)}")
 
     def apply_hdbscan(self):
-        umap_df = self.fetch_table("player_umap_standard")
-        #reduced_df = self.fetch_table("player_umap_reduced")
+        umap_df = self.fetch_table("player_umap_final")
 
-        cluster_sizes = {"TOP" : 5, "JUNGLE" : 10, "MIDDLE" : 100, "BOTTOM" : 40, "UTILITY" : 75}
-        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 5, "BOTTOM" : 1, "UTILITY" : 10}
+        cluster_sizes = {"TOP" : 10, "JUNGLE" : 10, "MIDDLE" : 50, "BOTTOM" : 40, "UTILITY" : 75}
+        min_samples = {"TOP" : 1, "JUNGLE" : 1, "MIDDLE" : 10, "BOTTOM" : 1, "UTILITY" : 10}
 
         for lane in umap_df['lane'].unique():
-            # if lane == "TOP" or lane == "MIDDLE":
-            #     lane_subset = reduced_df[reduced_df['lane'] == lane].copy()
-            # else:
-            #     lane_subset = umap_df[umap_df['lane'] == lane].copy()
             lane_subset = umap_df[umap_df['lane'] == lane].copy()
             lane_coordinates = lane_subset[['x', 'y', 'z']]
 
             clusterer = hdbscan.HDBSCAN(min_cluster_size=cluster_sizes[lane],min_samples=min_samples[lane], gen_min_span_tree=True, prediction_data=True).fit(lane_coordinates)
-            joblib.dump(clusterer, f"hdbscan_standard_{lane}.sav")
+            joblib.dump(clusterer, f"hdbscan_final_{lane}.sav")
             clusters = clusterer.fit_predict(lane_coordinates)
             unique_clusters = np.unique(clusters)
             n_clusters = len(unique_clusters) - (1 if -1 in clusters else 0)
@@ -490,8 +500,13 @@ class TimelineProcessor:
 
         range_num_k = range(2, 11)
 
-        for lane in df['lane'].unique():
-            if table == "player_pca" or table == "player_fa" or table == "player_umap_standard" or table == "player_umap_reduced":
+        plt.figure(figsize=(10, 6))
+
+        lanes = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+
+        for lane in lanes:
+            coordinate_tables = ["player_pca", "pca_reduced", "player_fa", "fa_reduced", "player_umap_standard", "player_umap_reduced"]
+            if table in coordinate_tables:
                 lane_subset = df[df['lane'] == lane][['x', 'y', 'z']]
             else:
                 lane_subset = df[df['lane'] == lane][self.features]
@@ -504,15 +519,17 @@ class TimelineProcessor:
                 score = silhouette_score(lane_subset, labels, sample_size=1000, random_state=4)
                 silhouette_scores.append(score)
 
-            plt.figure(figsize=(8, 4))
-            plt.plot(list(range_num_k), silhouette_scores, marker='o', color='steelblue')
-            plt.xlabel("Number of Clusters (k)")
-            plt.ylabel("Silhouette Score")
-            plt.title(f"{lane} Silhouette Score {table}")
-            plt.xticks(range(2, 11))
-            plt.tight_layout()
-            plt.savefig(f"../figures/{lane}_{table}.png", dpi=150)
-            plt.show()
+            plt.plot(list(range_num_k), silhouette_scores, marker='o', label=lane)
+
+        plt.xlabel("Number of Clusters (k)")
+        plt.ylabel("Silhouette Score")
+        plt.title(f"Silhouette Score {table}")
+        plt.xticks(range(2, 11))
+        plt.legend(title="Lanes", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
+        plt.savefig(f"../figures/{table}.png", dpi=150)
+        plt.show()
 
     def tune_umap(self):
         standardised_df = self.fetch_table("player_standardised")
@@ -534,5 +551,5 @@ class TimelineProcessor:
                 self.tune_df_hdbscan_params(standardised_lane_subset, lane)
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.calculate_optimal_k("player_features")
-# timelineProcessor.tune_table_hdbscan_params("player_fa")
+timelineProcessor.apply_umap("player_umap_final")
+timelineProcessor.apply_hdbscan()
