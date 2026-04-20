@@ -326,19 +326,23 @@ class TimelineProcessor:
             plt.savefig(f"../figures/VIF Plots/VIF_{lane}.png", dpi=150)
             plt.show()
 
-
+    # Perform PCA on data
     def apply_pca(self, table):
+        # Fetch standardised data and create lane subsets
         standardised_df = self.fetch_table("player_standardised")
-
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+
+            # Instantiate PCA class with 3 components and random state
             pca = PCA(n_components=3, random_state=4)
 
+            # Fit using full or reduced features based on table input
             if table == "pca_reduced":
                 pca_results = pca.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
             else:
                 pca_results = pca.fit_transform(standardised_lane_subset[self.features])
 
+            # Fetch and display explained variance for each component and total retained variance
             explained_variance = pca.explained_variance_ratio_
             total_info = explained_variance.sum()
 
@@ -348,39 +352,50 @@ class TimelineProcessor:
             print(f"  z explains: {explained_variance[2]:.1%}")
             print(f"  retained: {total_info:.1%}")
 
+            # Adds columns for each component to standardised subset and insert into table
             standardised_lane_subset[['x', 'y', 'z']] = pca_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
+    # Perform Feature Agglomeration on data
     def apply_fa(self, table):
+        # Fetch standardised data and create lane subsets
         standardised_df = self.fetch_table("player_standardised")
-
         for lane in standardised_df['lane'].unique():
             standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+
+            # Initialise FeatureAgglomeration class with 3 clusters
             agglo = FeatureAgglomeration(n_clusters=3)
 
+            # Fit using full or reduced features based on table input
             if table == "fa_reduced":
                 agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.reduced_features[lane]])
             else:
                 agglomeration_results = agglo.fit_transform(standardised_lane_subset[self.features])
-            #
-            # feature_groups = pd.DataFrame({
-            #     'feature': self.reduced_features[lane],
-            #     'group': agglo.labels_
-            # }).sort_values('group')
-            #
-            # print(feature_groups)
 
+            # Display feature group membership
+            feature_groups = pd.DataFrame({
+                'feature': self.reduced_features[lane],
+                'group': agglo.labels_
+            }).sort_values('group')
+            print(feature_groups)
+
+            # Add columns for each group to standardised subset and insert into table
             standardised_lane_subset[['x', 'y', 'z']] = agglomeration_results
             self.insert_reduced_features(standardised_lane_subset, table)
-            print("Inserted " + lane)
 
+    # Apply UMAP on data
     def apply_umap(self, table):
+        # Fetch standardised data
         standardised_df = self.fetch_table("player_standardised")
 
+        # Dict of n_neighbours produced by tune_umap method
         neighbours = {"TOP" : 10, "JUNGLE" : 15, "MIDDLE" : 15, "BOTTOM" : 30, "UTILITY" : 50}
 
         for lane in standardised_df['lane'].unique():
+            # Create lane subsets
+            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
 
+            # Full or reduced features based on table and lane
             if table == "player_umap_standard":
                 features = self.features
             elif table == "player_umap_reduced":
@@ -391,10 +406,16 @@ class TimelineProcessor:
                 else:
                     features = self.features
 
-            standardised_lane_subset = standardised_df[standardised_df['lane'] == lane].copy()
+            # Instantiate UMAP class with 3 components, neighbours based on lane, 0 minimum distance and random state 4
             umap_3d = umap.UMAP(n_components=3,n_neighbors=neighbours[lane], min_dist=0.0 ,random_state=4)
+
+            # Transform lane subset using umap results
             umap_results = umap_3d.fit_transform(standardised_lane_subset[features])
+
+            # Serialise for online component
             joblib.dump(umap_3d, f"{table}_{lane}.sav")
+
+            # Add columns for each component to standardised subset and insert into table
             standardised_lane_subset[['x', 'y', 'z']] = umap_results
             self.insert_reduced_features(standardised_lane_subset, table)
 
@@ -495,16 +516,16 @@ class TimelineProcessor:
         execute_values(self.cur, query, tuples)
         self.conn.commit()
 
+    # Perform k-means on each lane subset of specified table to find best k
     def calculate_optimal_k(self, table):
+        # Fetches table passed as parameter
         df = self.fetch_table(table)
-
+        # Specify k range and create plot
         range_num_k = range(2, 11)
-
         plt.figure(figsize=(10, 6))
-
         lanes = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
-
         for lane in lanes:
+            # Specify columns based on table
             coordinate_tables = ["player_pca", "pca_reduced", "player_fa", "fa_reduced", "player_umap_standard", "player_umap_reduced"]
             if table in coordinate_tables:
                 lane_subset = df[df['lane'] == lane][['x', 'y', 'z']]
@@ -512,15 +533,18 @@ class TimelineProcessor:
                 lane_subset = df[df['lane'] == lane][self.features]
 
             silhouette_scores = []
-
+            # Loop through each k in range
             for k in range_num_k:
+                # Instantiate KMeans class using k clusters, random state 4 and n init 10
                 km = KMeans(n_clusters=k, random_state=4, n_init=10)
+                # Assign cluster to each data point
                 labels = km.fit_predict(lane_subset)
+                # Calculate silhouette score using subset and clusters, high sample size for large data and random state 4
                 score = silhouette_score(lane_subset, labels, sample_size=1000, random_state=4)
+                # Add to silhouette scores to be visualised on the same plot
                 silhouette_scores.append(score)
-
             plt.plot(list(range_num_k), silhouette_scores, marker='o', label=lane)
-
+        # Plot all silhouette scores on same plot using different colours for each lane
         plt.xlabel("Number of Clusters (k)")
         plt.ylabel("Silhouette Score")
         plt.title(f"Silhouette Score {table}")
