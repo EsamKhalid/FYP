@@ -19,8 +19,13 @@ class DBConnection:
         self.conn.close()
 
     def get_seed(self, rank):
-        self.cur.execute(f"SELECT puuid FROM players WHERE current_rank = '{rank}' AND scraped = 'false' ORDER BY rank_date ASC")
+        self.cur.execute(f"SELECT puuid FROM players WHERE current_rank = '{rank}' ORDER BY last_scraped DESC")
         return self.cur.fetchone()
+
+    def get_player_rank(self, puuid):
+        self.cur.execute(f"SELECT current_rank, current_division FROM players WHERE puuid = '{puuid}'")
+        return self.cur.fetchone()
+
 
     #inserts player (not match participant) into database to be scraped
     def insert_player(self, puuid, region):
@@ -59,6 +64,10 @@ class DBConnection:
                          f"WHERE match_id = '{match_id}'")
         self.conn.commit()
 
+    def insert_player_match(self, match_id : str, patch_version : str, seed_rank : str, seed_puuid : str, seed_division : str):
+        self.cur.execute(f"INSERT INTO player_matches (match_id, patch_version, seed_rank, seed_puuid, seed_division) VALUES ('{match_id}', '{patch_version}', '{seed_rank}','{seed_puuid}','{seed_division}')")
+        self.conn.commit()
+
     def insert_match_data(self, match_id, data):
         self.cur.execute(f"INSERT INTO match_raw (match_id, raw_data) VALUES ('{match_id}','{data}')")
         self.conn.commit()
@@ -68,7 +77,7 @@ class DBConnection:
         self.conn.commit()
 
     def timeline_saved(self, match_id : str) -> bool:
-        self.cur.execute(f"SELECT 1 FROM timeline_raw WHERE match_id = '{match_id}'")
+        self.cur.execute(f"SELECT 1 FROM timelines WHERE match_id = '{match_id}'")
         if self.cur.fetchone():
             print("match exists")
             return True
@@ -76,7 +85,7 @@ class DBConnection:
 
     #checks if match is already saved in database
     def match_saved(self, match_id : str) -> bool:
-        self.cur.execute(f"SELECT 1 FROM matches WHERE match_id = '{match_id}'")
+        self.cur.execute(f"SELECT 1 FROM player_matches WHERE match_id = '{match_id}'")
         if self.cur.fetchone():
             print("match exists")
             return True
@@ -129,7 +138,6 @@ class DBConnection:
         self.cur.execute(f"SELECT match_id FROM matches")
         return self.cur.fetchall()
 
-
     # Made specifically for rank-division split in matches
     def query_matches(self):
         self.cur.execute("SELECT * FROM matches")
@@ -139,7 +147,6 @@ class DBConnection:
     def update_rank_division(self, match_id, rank, division):
         self.cur.execute(f"UPDATE matches SET rank = '{rank}', division = '{division}' WHERE match_id = '{match_id}'")
         self.conn.commit()
-
 
     # Made specifically for rank_snapshot merge to players
     def query_players(self):
@@ -181,3 +188,30 @@ class DBConnection:
                     os.remove(subdir+"/"+file)
                     print(subdir+"/"+file)
 
+    def insert_timelines(self):
+        rootdir = "C:/Api_Data/timeline_data"
+        for subdir, dirs, files in os.walk(rootdir):
+            for file in files:
+                parts = file.rsplit('_', 1)
+                result = parts[0]
+                self.cur.execute(f"INSERT INTO timelines (match_id) VALUES ('{result}')")
+                print("inserted")
+        self.conn.commit()
+
+    def insert_timeline(self,match_id):
+        self.cur.execute(f"INSERT INTO timelines (match_id) VALUES ('{match_id}')")
+        self.conn.commit()
+
+    def get_timelines(self):
+        self.cur.execute("SELECT * FROM timelines")
+        return self.cur.fetchall()
+
+    def remove_wrong_matches(self):
+        rootdir = "C:/Api_Data/match_data"
+        for subdir, dirs, files in os.walk(rootdir):
+            for file in files:
+                parts = file.rsplit('_', 1)
+                result = parts[0]
+                if not self.match_saved(result):
+                    os.remove(subdir + "/" + file)
+                    print(subdir + "/" + file)
