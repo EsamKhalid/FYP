@@ -13,7 +13,7 @@ using UnityEngine.UI;
 public class APIHandler : MonoBehaviour
 {
     private TMP_InputField nameField;
-    private TMP_InputField tagField;
+    //private TMP_InputField tagField;
     private TMP_Dropdown laneDropdown;
 
     private Button submitButton;
@@ -26,7 +26,7 @@ public class APIHandler : MonoBehaviour
     private void Awake()
     {
         nameField = GameObject.Find("nameInput").GetComponent<TMP_InputField>();
-        tagField = GameObject.Find("tagInput").GetComponent<TMP_InputField>();
+        //tagField = GameObject.Find("tagInput").GetComponent<TMP_InputField>();
         laneDropdown = GameObject.Find("LaneDropdown").GetComponent<TMP_Dropdown>();
         submitButton = GameObject.Find("SubmitButton").GetComponent<Button>();
         submitButton.onClick.AddListener(OnSubmitButton);
@@ -39,8 +39,9 @@ public class APIHandler : MonoBehaviour
 
     public void OnSubmitButton()
     {
-        string name = nameField.text;
-        string tag = tagField.text;
+        string[] input = nameField.text.Split('#');
+        string name = input[0];
+        string tag = input[1];
         string lane = laneList[laneValue];
         StartCoroutine(GetPoints(lane, name, tag));
     }
@@ -48,7 +49,6 @@ public class APIHandler : MonoBehaviour
     private void OnDropdownValueChanged(TMP_Dropdown change)
     {
 
-        Debug.Log("test");
         laneValue = change.value;
     }
     IEnumerator GetPlayerData(string name, string tag)
@@ -83,6 +83,7 @@ public class APIHandler : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
+            Debug.Log(data.success);
             if (data.success == true)
             {
                 SceneManager.LoadScene("Main");

@@ -485,7 +485,7 @@ class TimelineProcessor:
 
             lane_subset['cluster'] = clusters
 
-            self.insert_clusters("player_umap_standard", lane_subset)
+            self.insert_clusters("player_umap_final", lane_subset)
             print(f"inserted {lane}")
 
 
@@ -551,5 +551,4 @@ class TimelineProcessor:
                 self.tune_df_hdbscan_params(standardised_lane_subset, lane)
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_umap("player_umap_final")
 timelineProcessor.apply_hdbscan()

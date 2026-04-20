@@ -332,7 +332,7 @@ def get_player(name, tag, lane):
     success, error, puuid = process_player(name, tag, lane)
     if success:
         player_points = get_player_data(puuid, lane)
-        cur.execute(f"SELECT * FROM player_umap_standard WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
+        cur.execute(f"SELECT * FROM player_umap_final WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
         points = cur.fetchall()
 
 
