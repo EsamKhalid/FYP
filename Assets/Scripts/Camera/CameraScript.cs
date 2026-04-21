@@ -12,6 +12,8 @@ public class CameraScript : MonoBehaviour
     [SerializeField] private float maxOrbitDistance = 100000000f;
     [SerializeField] private float minOrbitDistance = 5f;
 
+    private float freeCamSens = 1f;
+
     private bool isOrbit = true;
 
     private float currentDistance;
@@ -21,6 +23,8 @@ public class CameraScript : MonoBehaviour
 
     private float mouseX;
     private float mouseY;
+
+    private float moveSpeed = 10f;
     
     private void Start()
     {
@@ -46,9 +50,16 @@ public class CameraScript : MonoBehaviour
         if (isOrbit)
         {
             handleOrbit();
+            ApplyCameraTransform();
+        }
+        else
+        {
+            HandleFreeLook();
+            HandleFreeMovement();
+            currentDistance = (maxOrbitDistance + minOrbitDistance) / 2;
         }
 
-        ApplyCameraTransform();
+
     }
 
     private void toggleLock()
@@ -56,8 +67,10 @@ public class CameraScript : MonoBehaviour
         isOrbit = !isOrbit;
         if (!isOrbit)
         {
-            transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-            transform.rotation = Quaternion.identity;
+            transitionCamera(centerTransform);
+            //transform.LookAt(centerTransform);
+            //transform.SetLocalPositionAndRotation(centerTransform.position + new Vector3(10, 10, 10), Quaternion.identity);
+            //transform.rotation = Quaternion.identity;
         }
         else
         {
@@ -110,5 +123,33 @@ public class CameraScript : MonoBehaviour
     {
         transform.position = Vector3.MoveTowards(transform.position, destinationTransform.position, 1 * Time.deltaTime);
         centerTransform = destinationTransform;
+    }
+
+    private void HandleFreeLook()
+    {
+        if (Mouse.current?.rightButton.isPressed != true) return;
+
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+
+        currentYaw += mouseDelta.x * sensitivity;
+        currentPitch -= mouseDelta.y * sensitivity;
+        currentPitch = Mathf.Clamp(currentPitch, -89f, 89f);
+
+        transform.rotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
+    }
+
+    private void HandleFreeMovement()
+    {
+        Vector3 moveInput = Vector3.zero;
+        var kb = Keyboard.current;
+
+        if (kb.wKey.isPressed) moveInput += transform.forward;
+        if (kb.sKey.isPressed) moveInput -= transform.forward;
+        if (kb.aKey.isPressed) moveInput -= transform.right;
+        if (kb.dKey.isPressed) moveInput += transform.right;
+        if (kb.qKey.isPressed) moveInput -= transform.up;
+        if (kb.eKey.isPressed) moveInput += transform.up;
+
+        transform.position += moveInput.normalized * moveSpeed * Time.deltaTime;
     }
 }

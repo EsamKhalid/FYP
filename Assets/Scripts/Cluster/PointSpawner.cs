@@ -134,15 +134,15 @@ public class PointSpawner : MonoBehaviour
 
     public void nextPoint()
     {
-        if (currentPoint == pointObjects.Length - 1)
+        if (currentPoint == playerPointObjects.Length - 1)
         {
             currentPoint = 0;
-            cameraScript.transitionCamera(pointObjects[currentPoint].transform);
+            cameraScript.transitionCamera(playerPointObjects[currentPoint].transform);
         }
         else
         {
             currentPoint += 1;
-            cameraScript.transitionCamera(pointObjects[currentPoint].transform);
+            cameraScript.transitionCamera(playerPointObjects[currentPoint].transform);
         }
             
     }
@@ -151,10 +151,10 @@ public class PointSpawner : MonoBehaviour
     {
         if(currentPoint == 0)
         {
-            currentPoint = pointObjects.Length;
+            currentPoint = playerPointObjects.Length;
         }
         currentPoint -= 1;
-        cameraScript.transitionCamera(pointObjects[currentPoint].transform);
+        cameraScript.transitionCamera(playerPointObjects[currentPoint].transform);
         
     }
 
