@@ -1,0 +1,121 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Style.uss?fileID=7433441132597879392&amp;guid=3b5268a6db05712449d1ba86d3f6ba94&amp;type=3#Style"/>
+    <ui:VisualElement name="root" class="full-screen">
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement class="logo-wrap">
+                <ui:Label name="header-lane" text="LANE: TOP" class="header-tag"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="header-spacer"/>
+            <ui:Button name="back-btn" text="◀  EXIT" class="exit-btn"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="body" class="body">
+            <ui:VisualElement name="sidebar-left" class="sidebar" style="width: 291px;">
+                <ui:VisualElement class="corner corner-tl"/>
+                <ui:VisualElement class="corner corner-tr"/>
+                <ui:VisualElement class="corner corner-bl"/>
+                <ui:VisualElement class="corner corner-br"/>
+                <ui:VisualElement class="panel-section">
+                    <ui:Label text="RANK FILTER" class="section-label"/>
+                    <ui:Label name="rank-display" text="GOLD" class="rank-big"/>
+                    <ui:Label text="SHOWING RANK ONLY" class="rank-hint"/>
+                    <ui:Slider name="rank-slider" low-value="0" high-value="9" value="3" class="slider"/>
+                    <ui:VisualElement class="rank-ticks">
+                        <ui:Label text="I" class="tick"/>
+                        <ui:Label text="B" class="tick"/>
+                        <ui:Label text="S" class="tick"/>
+                        <ui:Label text="G" class="tick"/>
+                        <ui:Label text="P" class="tick"/>
+                        <ui:Label text="E" class="tick"/>
+                        <ui:Label text="D" class="tick"/>
+                        <ui:Label text="M" class="tick"/>
+                        <ui:Label text="GM" class="tick"/>
+                        <ui:Label text="C" class="tick"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="section-divider"/>
+                <ui:VisualElement class="panel-section">
+                    <ui:VisualElement class="slider-row">
+                        <ui:Label text="SPACING" class="section-label no-margin"/>
+                        <ui:Label name="spacing-val" text="6.0" class="slider-readout"/>
+                    </ui:VisualElement>
+                    <ui:Slider name="spacing-slider" low-value="2" high-value="15" value="6" class="slider"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="section-divider"/>
+                <ui:VisualElement class="panel-section">
+                    <ui:VisualElement class="slider-row">
+                        <ui:Label text="OPACITY" class="section-label no-margin"/>
+                        <ui:Label name="alpha-val" text="1.00" class="slider-readout"/>
+                    </ui:VisualElement>
+                    <ui:Slider name="alpha-slider" low-value="0" high-value="1" value="1" class="slider"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="viewport-gap"/>
+            <ui:VisualElement name="sidebar-right" class="sidebar sidebar-right" style="width: 309px;">
+                <ui:VisualElement class="corner corner-tl"/>
+                <ui:VisualElement class="corner corner-tr"/>
+                <ui:VisualElement class="corner corner-bl"/>
+                <ui:VisualElement class="corner corner-br"/>
+                <ui:VisualElement class="panel-section">
+                    <ui:Label text="CLUSTER KEY" class="section-label"/>
+                    <ui:VisualElement class="cluster-list">
+                        <ui:VisualElement class="cluster-row">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(220, 50, 50);"/>
+                            <ui:Label text="CLUSTER 0" class="cluster-name"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cluster-row">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(70, 120, 220);"/>
+                            <ui:Label text="CLUSTER 1" class="cluster-name"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cluster-row">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(50, 200, 100);"/>
+                            <ui:Label text="CLUSTER 2" class="cluster-name"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cluster-row">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(245, 150, 30);"/>
+                            <ui:Label text="CLUSTER 3" class="cluster-name"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cluster-row">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(50, 220, 210);"/>
+                            <ui:Label text="CLUSTER 4" class="cluster-name"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cluster-row cluster-row-noise">
+                            <ui:VisualElement class="swatch" style="background-color: rgb(255, 107, 53);"/>
+                            <ui:Label text="NOISE  (-1)" class="cluster-name cluster-noise"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="section-divider"/>
+                <ui:VisualElement class="panel-section">
+                    <ui:Label text="NAVIGATE" class="section-label"/>
+                    <ui:Label name="point-counter" text="POINT  //  0001" class="point-counter"/>
+                    <ui:VisualElement class="nav-row">
+                        <ui:Button name="prev-btn" text="◀  PREV" class="nav-btn"/>
+                        <ui:Button name="next-btn" text="NEXT  ▶" class="nav-btn nav-accent"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="section-divider"/>
+                <ui:VisualElement class="panel-section hint-section">
+                    <ui:Label text="CAMERA CONTROLS" class="section-label"/>
+                    <ui:VisualElement class="hint-row">
+                        <ui:Label text="LMB DRAG" class="hint-key"/>
+                        <ui:Label text="ORBIT" class="hint-val"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="hint-row">
+                        <ui:Label text="SCROLL" class="hint-key"/>
+                        <ui:Label text="ZOOM" class="hint-val"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="hint-row">
+                        <ui:Label text="MMB DRAG" class="hint-key"/>
+                        <ui:Label text="PAN" class="hint-val"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="status-bar" class="status-bar">
+            <ui:Label name="sb-points" text="POINTS: —" class="sb-item"/>
+            <ui:Label name="sb-clusters" text="CLUSTERS: —" class="sb-item"/>
+            <ui:Label name="sb-noise" text="NOISE: —" class="sb-item sb-warn"/>
+            <ui:VisualElement class="sb-spacer"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

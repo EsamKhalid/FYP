@@ -43,7 +43,7 @@ public class PointSpawner : MonoBehaviour
         PlotPoints(umap_points);
         plotPlayerPoints(playerPoints);
         cameraScript.centerTransform = pointObjects[0].transform;
-        FilterByRank("IRON");
+        FilterByRank(playerPoints[0].current_rank);
     }
 
     void PlotPoints(UMAPPoint[] points)
