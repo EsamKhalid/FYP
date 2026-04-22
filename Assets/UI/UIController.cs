@@ -70,24 +70,33 @@ public class UIController : MonoBehaviour
         root.Q<Button>("back-btn").clicked += () => pointSpawner.BackToInput();
     }
 
-
-    /// Call once after the API response arrives so the status bar shows real counts.
-    public void SetStatusBar(int points, int clusters, int noise, string lane)
+    public void SetStatusBar(int points, string lane, int playerPoints)
     {
         var root = uiDocument.rootVisualElement;
 
         root.Q<Label>("sb-points")  .text = $"POINTS: {points:N0}";
-        root.Q<Label>("sb-clusters").text = $"CLUSTERS: {clusters}";
-        root.Q<Label>("sb-noise")   .text = $"NOISE: {noise:N0}";
         root.Q<Label>("header-lane").text = $"LANE: {lane.ToUpper()}";
 
-        totalPoints = points;
+        totalPoints = playerPoints;
         RefreshPointCounter();
     }
 
     private void RefreshPointCounter()
     {
         if (pointCounter == null) return;
+        if (totalPoints > 0)
+        {
+            if (currentPointIndex < 0)
+            {
+                currentPointIndex = totalPoints - 1;
+            }
+                
+
+            else if (currentPointIndex >= totalPoints)
+            {
+                currentPointIndex = 0;
+            }
+        }
         string total = totalPoints > 0 ? totalPoints.ToString("N0") : "?";
         pointCounter.text = $"POINT  //  {(currentPointIndex + 1):D4}  of  {total}";
     }

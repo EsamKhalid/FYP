@@ -10,6 +10,7 @@ public class PointSpawner : MonoBehaviour
     private GameObject handlerObject;
     private APIHandler handler;
     private APIResponse response;
+    [SerializeField] private UIController uiController;
 
     private GameObject[] pointObjects;
     private GameObject[] playerPointObjects;
@@ -18,8 +19,6 @@ public class PointSpawner : MonoBehaviour
 
     [SerializeField] private GameObject cubePrefab;
     [SerializeField] GameObject cameraObject;
-
-    [SerializeField] private TextMeshProUGUI rankLabel;
 
     private string[] ranks = { "IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER" };
 
@@ -32,7 +31,6 @@ public class PointSpawner : MonoBehaviour
     void Awake()
     {
         cameraScript = cameraObject.GetComponent<CameraScript>();
-        
         handlerObject = GameObject.Find("API");
         handler = handlerObject.GetComponent<APIHandler>();
         response = handler.data;
@@ -42,7 +40,7 @@ public class PointSpawner : MonoBehaviour
         playerPointObjects = new GameObject[playerPoints.Length];
         PlotPoints(umap_points);
         plotPlayerPoints(playerPoints);
-        cameraScript.centerTransform = pointObjects[0].transform;
+        cameraScript.transitionCamera(playerPointObjects[0].transform);
         FilterByRank(playerPoints[0].current_rank);
     }
 
@@ -58,7 +56,7 @@ public class PointSpawner : MonoBehaviour
             switch (points[i].cluster)
             {
                 case -1:
-                    pointColour = Color.white;
+                    pointColour = Color.black;
                     noiseCounter++;
                     break;
                 case 0:
@@ -121,8 +119,6 @@ public class PointSpawner : MonoBehaviour
     public void UpdateAlpha(float newAlpha)
     {
         currentAlpha = newAlpha;
-        Debug.Log(newAlpha);
-
         for (int i = 0; i < pointObjects.Length; i++)
         {
             Renderer cubeRenderer = pointObjects[i].GetComponent<Renderer>();
@@ -160,6 +156,9 @@ public class PointSpawner : MonoBehaviour
 
     public void FilterByRank(string targetRank)
     {
+
+        int count = 0;
+
         for (int i = 0; i < pointObjects.Length; i++)
         {
             if (pointObjects[i] != null)
@@ -172,8 +171,11 @@ public class PointSpawner : MonoBehaviour
                 
 
                 pointObjects[i].SetActive(shouldBeVisible);
+                count++;
             }
         }
+
+        uiController.SetStatusBar(count, playerPoints[0].lane, playerPoints.Length);
 
         for (int i = 0; i < playerPointObjects.Length; i++)
         {
@@ -192,8 +194,6 @@ public class PointSpawner : MonoBehaviour
         if (index >= 0 && index < ranks.Length)
         {
             string selectedRank = ranks[index];
-
-            if (rankLabel != null) rankLabel.text = selectedRank;
 
             FilterByRank(selectedRank);
         }

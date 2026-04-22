@@ -12,7 +12,7 @@ public class CameraScript : MonoBehaviour
     [SerializeField] private float maxOrbitDistance = 100000000f;
     [SerializeField] private float minOrbitDistance = 5f;
 
-    private float freeCamSens = 1f;
+    private float freeCamSens = 0.1f;
 
     private bool isOrbit = true;
 
@@ -34,9 +34,6 @@ public class CameraScript : MonoBehaviour
         currentYaw = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
         currentPitch = Mathf.Asin(offset.y / currentDistance) * Mathf.Rad2Deg;
     }
-
-
-
     void Update()
     {
 
@@ -58,10 +55,7 @@ public class CameraScript : MonoBehaviour
             HandleFreeMovement();
             currentDistance = (maxOrbitDistance + minOrbitDistance) / 2;
         }
-
-
     }
-
     private void toggleLock()
     {
         isOrbit = !isOrbit;
@@ -77,8 +71,6 @@ public class CameraScript : MonoBehaviour
             currentDistance = (maxOrbitDistance + minOrbitDistance) / 2;
         }
     }
-
-
 
     private void handleOrbit()
     {
@@ -131,8 +123,8 @@ public class CameraScript : MonoBehaviour
 
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
 
-        currentYaw += mouseDelta.x * sensitivity;
-        currentPitch -= mouseDelta.y * sensitivity;
+        currentYaw += mouseDelta.x * freeCamSens;
+        currentPitch -= mouseDelta.y * freeCamSens;
         currentPitch = Mathf.Clamp(currentPitch, -89f, 89f);
 
         transform.rotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
