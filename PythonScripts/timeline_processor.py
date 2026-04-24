@@ -633,7 +633,30 @@ class TimelineProcessor:
         plt.show()
 
         print(composition)
-        return composition
+
+    def interpret_clusters(self):
+        standardised_df = self.fetch_table("player_standardised")
+        cluster_df = self.fetch_table("player_umap_final")
+
+        lanes = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+
+        for lane in lanes:
+            lane_standardised_df = standardised_df[standardised_df["lane"] == lane]
+            lane_cluster_df = cluster_df[cluster_df["lane"] == lane]
+
+            merged = pd.merge(lane_standardised_df, lane_cluster_df[["puuid", "match_id", "cluster"]], on=['match_id', 'puuid'], how='left')
+            filtered = merged[merged["cluster"] != -1].drop(columns=["match_id", "puuid", "lane", "win"])
+
+            cluster_profiles = filtered.groupby("cluster").mean()
+
+            plt.figure(figsize=(14, 10))
+            sns.heatmap(cluster_profiles.T, annot=True, fmt='.2f',cmap='coolwarm', center=0)
+            plt.title(f'Mean Feature Values per Cluster - {lane}')
+            plt.tight_layout()
+            plt.savefig(f'cluster_profiles_{lane}.png', dpi=150)
+            plt.show()
+
+
 
 timelineProcessor = TimelineProcessor()
-timelineProcessor.get_match_rank_composition()
+timelineProcessor.interpret_clusters()
