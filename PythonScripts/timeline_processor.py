@@ -574,5 +574,66 @@ class TimelineProcessor:
                 standardised_lane_subset[['x', 'y', 'z']] = umap_results
                 self.tune_df_hdbscan_params(standardised_lane_subset, lane)
 
+    def get_match_rank_composition(self):
+        composition_df = self.fetch_table("match_rank_composition")
+
+        desired_distribution = {"IRON": 0.1, "BRONZE": 0.1,
+                                "SILVER": 0.15, "GOLD": 0.15,
+                                "PLATINUM": 0.1, "EMERALD": 0.1, "DIAMOND": 0.1,
+                                "MASTER": 0.066, "GRANDMASTER": 0.067, "CHALLENGER": 0.067}
+
+        rank_names = {
+            0: "IRON",
+            1: "BRONZE",
+            2: "SILVER",
+            3: "GOLD",
+            4: "PLATINUM",
+            5: "EMERALD",
+            6: "DIAMOND",
+            7: "MASTER",
+            8: "GRANDMASTER",
+            9: "CHALLENGER",
+        }
+
+        composition = {
+            score: {"rank": rank_names[score], "count": 0, "percentage": 0}
+            for score in rank_names
+        }
+
+        for _, row in composition_df.iterrows():
+            avg_rank_score = row["avg_rank_score"]
+            if pd.isna(avg_rank_score):
+                continue
+
+            rank_score = min(9, max(0, int(round(avg_rank_score))))
+            composition[rank_score]["count"] += 1
+
+        total_matches = len(composition_df)
+        if total_matches > 0:
+            for score in composition:
+                composition[score]["percentage"] = round((composition[score]["count"] / total_matches), 4) * 100
+
+        rank_labels = [rank_names[i] for i in range(10)]
+        actual_distribution = [composition[i]["percentage"] for i in range(10)]
+        desired_distribution_pct = [desired_distribution[rank] * 100 for rank in rank_labels]
+
+        x = np.arange(len(rank_labels))
+        width = 0.38
+
+        plt.figure(figsize=(12, 6))
+        plt.bar(x - width / 2, actual_distribution, width, label="Actual", color="steelblue")
+        plt.bar(x + width / 2, desired_distribution_pct, width, label="Desired", color="orange")
+        plt.title("Match Rank Distribution: Actual vs Desired")
+        plt.xlabel("Rank")
+        plt.ylabel("Percentage (%)")
+        plt.xticks(x, rank_labels, rotation=30, ha="right")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"../figures/rank_distribution.png", dpi=150)
+        plt.show()
+
+        print(composition)
+        return composition
+
 timelineProcessor = TimelineProcessor()
-timelineProcessor.apply_hdbscan()
+timelineProcessor.get_match_rank_composition()
