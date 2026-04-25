@@ -108,6 +108,10 @@
                         <ui:Label text="MMB DRAG" class="hint-key"/>
                         <ui:Label text="PAN" class="hint-val"/>
                     </ui:VisualElement>
+                    <ui:VisualElement class="hint-row">
+                        <ui:Label text="C" class="hint-key"/>
+                        <ui:Label text="LOCK / UNLOCK CAMERA" class="hint-val"/>
+                    </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

@@ -1,0 +1,45 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/UIStyle.uss?fileID=7433441132597879392&amp;guid=a514c1d61efbd1e4bbe3a7b0e5647d66&amp;type=3#UIStyle"/>
+    <ui:VisualElement name="root" class="full-screen menu-bg">
+        <ui:VisualElement class="stripe-overlay"/>
+        <ui:VisualElement class="big-corner big-corner-tl" style="top: 30px; left: 30px;"/>
+        <ui:VisualElement class="big-corner big-corner-br" style="bottom: 30px; right: 30px;"/>
+        <ui:VisualElement class="menu-center" style="width: 1916px;">
+            <ui:VisualElement class="logo-block">
+                <ui:VisualElement class="logo-row">
+                    <ui:VisualElement class="big-diamond"/>
+                    <ui:Label text="PLAYSTYLE" class="title-main" style="-unity-text-align: upper-center;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="title-divider"/>
+                <ui:Label text="/////////////////////////////////////////////////////////////////////////////////////////" class="title-sub" style="-unity-text-align: upper-center;"/>
+                <ui:Label text="A League of Legends Playstyle Clustering and Visualisation System" class="title-sub" style="-unity-text-align: upper-center;"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="menu-buttons" style="height: 219px; width: 684px;">
+                <ui:Button name="play-btn" class="menu-btn menu-btn-primary">
+                    <ui:VisualElement class="btn-inner">
+                        <ui:Label text="▶" class="btn-icon"/>
+                        <ui:VisualElement class="btn-text-group">
+                            <ui:Label text="INITIALIZE" class="btn-label"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:Button>
+                <ui:Button name="about-btn" class="menu-btn menu-btn-dim">
+                    <ui:VisualElement class="btn-inner">
+                        <ui:Label text="◈" class="btn-icon btn-icon-dim"/>
+                        <ui:VisualElement class="btn-text-group">
+                            <ui:Label text="ABOUT" class="btn-label btn-label-dim"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:Button>
+                <ui:Button name="quit-btn" class="menu-btn menu-btn-danger">
+                    <ui:VisualElement class="btn-inner">
+                        <ui:Label text="✕" class="btn-icon btn-icon-danger"/>
+                        <ui:VisualElement class="btn-text-group">
+                            <ui:Label text="QUIT" class="btn-label btn-label-danger"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

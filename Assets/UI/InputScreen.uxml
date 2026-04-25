@@ -1,0 +1,52 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/UIStyle.uss?fileID=7433441132597879392&amp;guid=a514c1d61efbd1e4bbe3a7b0e5647d66&amp;type=3#UIStyle"/>
+    <ui:VisualElement name="root" class="full-screen menu-bg">
+        <ui:VisualElement class="stripe-overlay"/>
+        <ui:VisualElement class="input-header">
+            <ui:VisualElement class="logo-wrap-small">
+                <ui:VisualElement class="small-diamond"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="header-spacer"/>
+        </ui:VisualElement>
+        <ui:VisualElement class="input-center">
+            <ui:VisualElement class="input-card" style="height: 512px; width: 648px;">
+                <ui:VisualElement class="corner corner-tl"/>
+                <ui:VisualElement class="corner corner-tr"/>
+                <ui:VisualElement class="corner corner-bl"/>
+                <ui:VisualElement class="corner corner-br"/>
+                <ui:VisualElement class="card-header">
+                    <ui:Label text="PLAYER IDENTIFICATION" class="card-title"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="card-divider"/>
+                <ui:VisualElement class="field-group">
+                    <ui:VisualElement class="field-label-row">
+                        <ui:Label text="RIOT ID" class="field-label"/>
+                        <ui:Label text="FORMAT: Name#Tag" class="field-hint"/>
+                    </ui:VisualElement>
+                    <ui:TextField name="riot-id-field" placeholder-text="SummonerName#EUW" class="cyber-text-field"/>
+                    <ui:Label name="id-error" text="" class="field-error"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="field-group">
+                    <ui:Label text="LANE" class="field-label"/>
+                    <ui:VisualElement class="lane-selector">
+                        <ui:Button name="lane-TOP" text="TOP" class="lane-toggle lane-active"/>
+                        <ui:Button name="lane-JUNGLE" text="JNG" class="lane-toggle"/>
+                        <ui:Button name="lane-MIDDLE" text="MID" class="lane-toggle"/>
+                        <ui:Button name="lane-BOTTOM" text="BOT" class="lane-toggle"/>
+                        <ui:Button name="lane-UTILITY" text="SUP" class="lane-toggle"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="card-divider"/>
+                <ui:Button name="submit-btn" text="▶  SEARCH" class="submit-btn"/>
+                <ui:VisualElement name="loading-bar" class="loading-bar loading-hidden">
+                    <ui:VisualElement class="loading-fill"/>
+                </ui:VisualElement>
+                <ui:Label name="loading-label" text="" class="loading-label"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="menu-footer">
+            <ui:Button name="back-btn" text="◀  BACK TO MENU" class="back-btn"/>
+            <ui:VisualElement class="footer-spacer"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
