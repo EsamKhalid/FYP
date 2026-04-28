@@ -20,17 +20,23 @@ public class APIHandler : MonoBehaviour
     }
 
     IEnumerator GetPoints(string lane, string name, string tag, System.Action onSuccess = null, System.Action<string> onError = null)
-    {
+    { 
+        // String concatenation between url and input values
         string url = "http://127.0.0.1:8000/getPlayer/" + name + "/" + tag + "/" + lane;
+
+        // Sends web request to url
         UnityWebRequest request = UnityWebRequest.Get(url);
         yield return request.SendWebRequest();
 
         if (request.result == UnityWebRequest.Result.Success)
         {
+            // Assigns returned json values to data attribute
             data = JsonConvert.DeserializeObject<APIResponse>(request.downloadHandler.text);
+            // If no errors
             if (data.success)
             {
                 onSuccess?.Invoke();
+                // Loads main visualisation scene
                 SceneManager.LoadScene("Main");
             }
             else

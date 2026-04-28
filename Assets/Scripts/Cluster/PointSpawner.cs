@@ -46,18 +46,20 @@ public class PointSpawner : MonoBehaviour
 
     void PlotPoints(UMAPPoint[] points)
     {
-        int noiseCounter = 0;
+        // Loops through all background points
         for (int i = 0; i < points.Length; i++)
         {
+            // Creates position value
             Vector3 position = new Vector3(points[i].x, points[i].y, points[i].z) * currentSpacing;
+            // Spawns cube
             pointObjects[i] = Instantiate(cubePrefab, position, Quaternion.identity);
+            // Colours based on cluster membership
             Renderer cubeRenderer = pointObjects[i].GetComponent<Renderer>();
             Color pointColour;
             switch (points[i].cluster)
             {
                 case -1:
                     pointColour = Color.black;
-                    noiseCounter++;
                     break;
                 case 0:
                     pointColour = Color.red;
@@ -84,10 +86,14 @@ public class PointSpawner : MonoBehaviour
 
     void plotPlayerPoints(UMAPPoint[] playerPoints)
     {
+        // Loops through all player points
         for (int i = 0; i < playerPoints.Length; i++)
         {
+            // Creates position value based on the point coordinates multiplied by spacing value
             Vector3 position = new Vector3(playerPoints[i].x, playerPoints[i].y, playerPoints[i].z) * currentSpacing;
+            // Instantiates the cube using the position value
             playerPointObjects[i] = Instantiate(cubePrefab, position, Quaternion.identity);
+            // Colours the cube white
             Renderer cubeRenderer = playerPointObjects[i].GetComponent<Renderer>();
             cubeRenderer.material.color = Color.white;
         }

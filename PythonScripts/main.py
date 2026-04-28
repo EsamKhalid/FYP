@@ -1,6 +1,4 @@
 import json
-from http.client import responses
-from tkinter.ttk import Label
 
 from fastapi import FastAPI
 import requests
@@ -100,12 +98,11 @@ def api_call(url: str, max_retries=3) -> json:
     return None
 
 def load_models(lane):
-    scaler = joblib.load(f"../Models/scaler_{lane}.sav")
-    umap_model = joblib.load(f"../Models/umap_standard_{lane}.sav")
-    hdbscan_model = joblib.load(f"../Models/hdbscan_standard_{lane}.sav")
+    scaler = joblib.load(f"../Models/Final/scaler_{lane}.sav")
+    umap_model = joblib.load(f"../Models/Final/player_umap_final_{lane}.sav")
+    hdbscan_model = joblib.load(f"../Models/Final/hdbscan_final_{lane}.sav")
 
     return scaler, umap_model, hdbscan_model
-
 
 def get_puuid(name : str, tag : str) -> str:
     response = api_call(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}")
@@ -144,13 +141,20 @@ def get_player_data(puuid, lane):
 
 def process_player(name, tag, lane):
     print(f"Processing player: {name} #{tag}")
+    # Fetches PUUID from Riot API
     puuid = get_puuid(name, tag)
+
+    # Fetches rank from Riot API and returns false if unranked
     rank = get_player_rank(puuid)
     if not rank:
         return False, "Not currently ranked", puuid
+
+    # Attempts to fetch player data from database, returning True if exists
     player_data = get_player_data(puuid, lane)
     if player_data:
         return True, "None", puuid
+
+    # If not in database, query API for last 100 matches, returning the first 20 valid matches
     match_count = 0
     match_list = get_matches(puuid)
     for match_id in match_list:
@@ -322,42 +326,34 @@ def process_match(match_id, puuid, lane, rank):
 
 #print(process_player("SpilltTea", "TEA", "MIDDLE"))
 
+# FastAPI endpoint which returns player points and data points based on Riot ID
 @app.get("/getPlayer/{name}/{tag}/{lane}")
 
 def get_player(name, tag, lane):
-
+    # Sets player points and points to None in case of error
     player_points = None
     points = None
 
+    # success -> Boolean for if fetching and processing player was successful
+    # error   -> If not successful, why
+    # puuid   -> Used to fetch data from database if already exists
     success, error, puuid = process_player(name, tag, lane)
     if success:
+
+        # Fetches processed player points from the database
         player_points = get_player_data(puuid, lane)
+
+        # Fetches data points from the database
         cur.execute(f"SELECT * FROM player_umap_final WHERE lane = '{lane}' AND cluster != -1 AND puuid != '{puuid}'")
         points = cur.fetchall()
 
-
-
-    # Add a boolean to determine if the fetch was successful or not
-
+    # Returns as API response
     return {
         "playerPoints" : player_points,
         "points" : points,
         "success" : success,
         "error" : error
     }
-
-# @app.get("/clusterManager/{name}/{tag}")
-#
-# def get_player(name : str, tag : str):
-#
-#     puuid = get_puuid(name, tag)
-#     matchList = get_matches(puuid)
-#     points = process_matches(matchList, puuid)
-#
-#     return {
-#         "puuid" : puuid,
-#         "points" : points,
-#     }
 
 @app.get("/UMAPPoints/{lane}")
 

@@ -23,14 +23,7 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:Button>
-                <ui:Button name="about-btn" class="menu-btn menu-btn-dim">
-                    <ui:VisualElement class="btn-inner">
-                        <ui:Label text="◈" class="btn-icon btn-icon-dim"/>
-                        <ui:VisualElement class="btn-text-group">
-                            <ui:Label text="ABOUT" class="btn-label btn-label-dim"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:Button>
+                <ui:Button name="about-btn" class="menu-btn menu-btn-dim"/>
                 <ui:Button name="quit-btn" class="menu-btn menu-btn-danger">
                     <ui:VisualElement class="btn-inner">
                         <ui:Label text="✕" class="btn-icon btn-icon-danger"/>
