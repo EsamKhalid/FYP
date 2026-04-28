@@ -1,4 +1,4 @@
-Data Mining and Playstyle Clustering of League of Legends Data
+# Data Mining and Playstyle Clustering of League of Legends Data
 
 A final-year project by **Esam Khalid**, Aston University (2025).
 
@@ -69,7 +69,7 @@ FastAPI  /getPlayer/{name}/{tag}/{lane}
 PostgreSQL  →  player_umap_standard     ← Player points returned to Unity
         │
         ▼
-Unity (Main scene)  ←  3D scatter plot rendered
+Unity (Main scene)  ←  Points rendered
 ```
 
 > **NOTE: Since the offline pipeline serves to create the data points, It does not need to be run for the project to work, instead the SQL insert files containing the required data and table structures can be found at: https://www.kaggle.com/datasets/esamkhalid/fyp-dataset**
@@ -112,9 +112,9 @@ Unity (Main scene)  ←  3D scatter plot rendered
 ## Project Structure
 
 ```
-playstyle-sys/
+FYP/
 │
-├── Backend/
+├── PythonScripts/
 │   ├── main.py                  # FastAPI application (online pipeline + endpoints)
 │   ├── timeline_processor.py    # Offline pipeline (feature extraction, Dimensionality Reduction, clustering)
 │   └── creds.py                 # API key and DB password
@@ -156,8 +156,11 @@ playstyle-sys/
 │   └── player_ranks.csv
 │
 └── figures/                     # Evaluation plots
-    ├── correlation_matrices/
-    └── VIF Plots/
+|   ├── correlation_matrices/
+|   └── VIF Plots/
+|
+└── Builds/                     
+    ├── FYP.exe                  # Final Build
 ```
 
 ---
@@ -260,38 +263,6 @@ Processes a player's recent ranked matches for the specified lane and returns th
   "error": "Not currently ranked"
 }
 ```
-
----
-
-## Features
-
-The following 25 features are engineered per player-match pair. Features at minutes 7 and 15 are extracted from the timeline file; all other features come from the match summary.
-
-| Feature                  | Description                                                      |
-| ------------------------ | ---------------------------------------------------------------- |
-| `gold_7`, `gold_15`      | Total gold at minutes 7 and 15                                   |
-| `cs_7`, `cs_15`          | Creep score (minions + jungle camps) at minutes 7 and 15         |
-| `xp_7`, `xp_15`          | Experience at minutes 7 and 15                                   |
-| `damage_7`, `damage_15`  | Damage dealt to champions at minutes 7 and 15                    |
-| `roaming_15`             | Cumulative Euclidean distance moved in the first 15 minutes      |
-| `gpm`                    | Gold per minute (full match)                                     |
-| `cspm`                   | Creep score per minute (full match)                              |
-| `xpm`                    | Experience per minute (full match)                               |
-| `dpm`                    | Damage per minute (full match)                                   |
-| `total_gold`             | Total gold earned                                                |
-| `total_cs`               | Total creep score                                                |
-| `total_xp`               | Total experience                                                 |
-| `total_damage`           | Total damage dealt to champions                                  |
-| `total_damage_taken`     | Total damage received                                            |
-| `total_roaming_distance` | Total Euclidean distance moved across the full match             |
-| `kda`                    | (Kills + Assists) / max(Deaths, 1)                               |
-| `kill_participation`     | Player kills / total team kills                                  |
-| `cc_score`               | Total time enemies spent in crowd control applied by this player |
-| `vision_score`           | Vision score (wards placed, cleared, vision bought)              |
-| `turret_damage`          | Damage dealt to turrets                                          |
-| `objective_damage`       | Damage dealt to objectives (Baron, Dragon, Herald)               |
-
----
 
 ## Troubleshooting
 
