@@ -1,6 +1,6 @@
 # Data Mining and Playstyle Clustering of League of Legends Data
 
-A final-year project by **Esam Khalid**, Aston University (2025).
+Final-year project by **Esam Khalid**, Aston University (2025).
 
 This system collects ranked match and timeline data from the Riot Games API, engineers behavioural feature vectors for each player-match pair, applies dimensionality reduction and density-based clustering to produce a three-dimensional behavioural space, and visualises the results interactively in a Unity application. Players can enter their own Riot ID to be projected into the space and locate their playstyle relative to the wider player population.
 
@@ -80,21 +80,21 @@ Unity (Main scene)  ←  Points rendered
 
 ### Python
 
-| Package        | Version tested | Purpose                       |
-| -------------- | -------------- | ----------------------------- |
-| `fastapi`      | 0.111          | Backend web framework         |
-| `uvicorn`      | 0.29           | ASGI server                   |
-| `requests`     | 2.31           | Riot API calls                |
-| `psycopg2`     | 2.9            | PostgreSQL driver             |
-| `pandas`       | 2.2            | Dataframe manipulation        |
-| `scikit-learn` | 1.4            | Scaler, PCA, FA, KMeans       |
-| `umap-learn`   | 0.5            | UMAP dimensionality reduction |
-| `hdbscan`      | 0.8            | Density-based clustering      |
-| `joblib`       | 1.4            | Model serialisation           |
-| `matplotlib`   | 3.8            | Evaluation plots              |
-| `seaborn`      | 0.13           | Correlation matrix heatmaps   |
-| `statsmodels`  | 0.14           | Variance Inflation Factor     |
-| `numpy`        | 1.26           | Numerical operations          |
+| Package        | Purpose                       |
+| -------------- | ----------------------------- |
+| `fastapi`      | Backend web framework         |
+| `uvicorn`      | ASGI server                   |
+| `requests`     | Riot API calls                |
+| `psycopg2`     | PostgreSQL driver             |
+| `pandas`       | Dataframe manipulation        |
+| `scikit-learn` | Scaler, PCA, FA, KMeans       |
+| `umap-learn`   | UMAP dimensionality reduction |
+| `hdbscan`      | Density-based clustering      |
+| `joblib`       | Model serialisation           |
+| `matplotlib`   | Evaluation plots              |
+| `seaborn`      | Correlation matrix heatmaps   |
+| `statsmodels`  | Variance Inflation Factor     |
+| `numpy`        | Numerical operations          |
 
 ### Database
 
@@ -186,7 +186,7 @@ pip install fastapi uvicorn requests psycopg2-binary pandas \
 
 ### 3. Credentials
 
-Create `Backend/creds.py` — **do not commit this file**:
+Create `Backend/creds.py`
 
 ```python
 API_KEY = "RGAPI-your-riot-api-key-here"
